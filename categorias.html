@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorías - Glow & Go</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- ESTILOS CSS PERSONALIZADOS -->
+    <style>
+        :root {
+            --color-cereza: #7A1C32;
+            --color-cereza-oscuro: #621628;
+            --color-dorado: #D4AF37;
+        }
+
+        .barra-catalogo-estetica {
+            background: linear-gradient(135deg, #7A1C32 0%, #521221 100%);
+            border-top: 2px solid #D4AF37;
+            border-bottom: 2px solid #D4AF37;
+            box-shadow: 0 4px 20px rgba(122, 28, 50, 0.25);
+        }
+
+        header.sticky {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 1000 !important;
+            background-color: #ffffff !important;
+        }
+
+        body {
+            padding-top: 96px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+   <!-- ========================================== -->
+   <!-- 📌 HEADER / NAVEGACIÓN PRINCIPAL -->
+   <!-- ========================================== -->
+   <header class="bg-white border-b border-gray-100 sticky shadow-sm">
+       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between gap-4">
+        
+           <!-- Logotipo de Glow & Go -->
+           <div class="flex items-center space-x-3 flex-shrink-0 py-2">
+               <a href="index.html" class="flex items-center">
+                   <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 md:h-20 w-auto object-contain">
+               </a>
+           </div>
+
+           <!-- Enlaces de navegación centrales -->
+           <nav class="hidden md:flex items-center space-x-6">
+               <a href="index.html" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors">Inicio</a>
+               <a href="catalogo.html" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors">Catálogo</a>
+            
+               <!-- Menú desplegable de Categorías -->
+               <div class="relative">
+                   <button onclick="toggleMenuCategoriasHeader()" class="text-sm font-bold text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer">
+                       Categorías <i class="fa-solid fa-chevron-down ml-1.5 text-xs"></i>
+                   </button>
+                   <div id="dropdown-categorias-header" class="hidden absolute left-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-50 p-2 divide-y divide-gray-50">
+                       <!-- Se llena dinámicamente con JS -->
+                   </div>
+               </div>
+           </nav>
+
+           <!-- Zona derecha: Buscador y Carrito -->
+           <div class="flex items-center space-x-4">
+            
+               <!-- 🔍 BARRA DE BÚSQUEDA -->
+               <div class="relative flex items-center">
+                   <div class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors px-3.5 py-2.5 rounded-xl border border-gray-200 shadow-sm">
+                       <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-sm"></i>
+                       <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-sm text-gray-800 focus:outline-none w-32 sm:w-40 md:w-52 placeholder-gray-500 font-medium">
+                   </div>
+                   <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-50 p-2 divide-y divide-gray-50"></div>
+               </div>
+
+               <!-- Botón Carrito -->
+               <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex-shrink-0">
+                   <i class="fa-solid fa-cart-shopping mr-2 text-white"></i> Carrito 
+                   <span id="cart-count" class="ml-2 bg-white text-[#7A1C32] text-xs px-2.5 py-0.5 rounded-full font-extrabold">0</span>
+               </a>
+
+           </div>
+       </div>
+   </header>
+    
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- 🌟 BARRA ESTÉTICA DE TÍTULO -->
+        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-8 text-center relative overflow-hidden">
+            <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
+            <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
+            <h1 id="categoria-titulo" class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">
+                Categoría: Seleccionada
+            </h1>
+        </div>
+
+        <!-- 📂 DISEÑO ORIGINAL DE DOS COLUMNAS -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            <!-- BARRA LATERAL IZQUIERDA DE CATEGORÍAS -->
+            <aside class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit sticky top-28 max-h-[80vh] overflow-y-auto">
+                <h3 class="text-lg font-black text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center">
+                    <i class="fa-solid fa-list mr-2 text-[#7A1C32]"></i> Categorías
+                </h3>
+                <div id="lista-categorias-lateral" class="space-y-2">
+                    <!-- Se llena dinámicamente con todas las categorías oficiales en MAYÚSCULAS -->
+                </div>
+            </aside>
+
+            <!-- CONTENEDOR DE PRODUCTOS -->
+            <div class="lg:col-span-3">
+                <section>
+                    <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+                </section>
+            </div>
+
+        </div>
+    </main>
+    
+    <!-- ========================================== -->
+    <!-- 📌 PIE DE PÁGINA -->
+    <!-- ========================================== -->
+    <footer class="bg-white border-t border-gray-100 py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 w-auto mx-auto object-contain">
+            <p class="text-sm text-gray-500 font-medium">Glow & Go — Tu mundo, en un solo lugar.</p>
+            <div class="text-xs text-gray-600 font-semibold space-y-1">
+                <p>📍 Fundado en El Socorro, Santander</p>
+                <p>👩‍💼 Fundadora: Zaidy Cano</p>
+                <p>📞 Contacto personal: <a href="https://wa.me/573107027780?text=Hola,%20Zaidy,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="text-[#7A1C32] font-bold hover:underline">3107027780</a></p>
+            </div>
+            <p class="text-xs text-gray-400 pt-2">&copy; 2026 Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- BOTÓN WHATSAPP -->
+    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go%20y%20quiero%20más%20información" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <!-- SCRIPT PRINCIPAL QUE CARGA EL CSV Y RENDERIZA TODO -->
+    <script src="js/app.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const verificarCarga = setInterval(() => {
+                if (productosInventario.length > 0) {
+                    clearInterval(verificarCarga);
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const catParam = urlParams.get('cat');
+                    const catsEnCsvNorm = [...new Set(productosInventario.map(p => normalizarTexto(p.categoria)))];
+                    
+                    let categoriaActiva = catParam ? decodeURIComponent(catParam).toUpperCase() : '';
+                    if (!categoriaActiva && catsEnCsvNorm.length > 0) {
+                        const primeraProd = productosInventario.find(p => normalizarTexto(p.categoria) === catsEnCsvNorm[0]);
+                        categoriaActiva = primeraProd ? primeraProd.categoria.toUpperCase() : categoriasOficiales[0].nombre.toUpperCase();
+                    }
+
+                    // Renderizar la barra lateral izquierda con todas las categorías oficiales en MAYÚSCULAS
+                    const lateralEl = document.getElementById('lista-categorias-lateral');
+                    if (lateralEl) {
+                        lateralEl.innerHTML = categoriasOficiales.map(cat => {
+                            const catNorm = normalizarTexto(cat.nombre);
+                            const disponible = catsEnCsvNorm.includes(catNorm);
+                            const activo = (normalizarTexto(categoriaActiva) === catNorm);
+
+                            if (disponible) {
+                                return `
+                                    <a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase transition-all ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
+                                        <span>${cat.nombre}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full ${activo ? 'bg-white text-[#7A1C32]' : 'bg-green-100 text-green-700'} font-extrabold">Disponible</span>
+                                    </a>
+                                `;
+                            } else {
+                                return `
+                                    <div class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase bg-gray-50 text-gray-400 opacity-60">
+                                        <span>${cat.nombre}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-extrabold">Próximamente</span>
+                                    </div>
+                                `;
+                            }
+                        }).join('');
+                    }
+
+                    // Título principal
+                    const tituloEl = document.getElementById('categoria-titulo');
+                    if (tituloEl) {
+                        tituloEl.textContent = `Categoría: ${categoriaActiva}`;
+                    }
+
+                    // Filtrar y mostrar productos exactos
+                    const normTarget = normalizarTexto(categoriaActiva);
+                    const productosFiltrados = productosInventario.filter(p => normalizarTexto(p.categoria) === normTarget);
+                    renderizarProductosGrilla(productosFiltrados);
+                }
+            }, 50);
+        });
+    </script>
+</body>
+</html>
