@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- ESTILOS CSS PERSONALIZADOS -->
     <style>
@@ -55,58 +54,58 @@
    <!-- 📌 HEADER / NAVEGACIÓN PRINCIPAL -->
    <!-- ========================================== -->
    <header class="bg-white border-b border-gray-100 sticky shadow-sm">
-       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between gap-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between gap-4">
         
-           <!-- Logotipo de Glow & Go -->
-           <div class="flex items-center space-x-3 flex-shrink-0 py-2">
-               <a href="index.html" class="flex items-center">
-                   <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 md:h-20 w-auto object-contain">
-               </a>
-           </div>
+            <!-- Logotipo de Glow & Go -->
+            <div class="flex items-center space-x-3 flex-shrink-0 py-2">
+                <a href="index.html" class="flex items-center">
+                    <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 md:h-20 w-auto object-contain">
+                </a>
+            </div>
 
-           <!-- Enlaces de navegación centrales -->
-           <nav class="hidden md:flex items-center space-x-6">
-               <a href="index.html" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors">Inicio</a>
-               <a href="catalogo.html" class="text-sm font-bold text-[#7A1C32] transition-colors">Catálogo</a>
+            <!-- Enlaces de navegación centrales -->
+            <nav class="hidden md:flex items-center space-x-6">
+                <a href="index.html" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors">Inicio</a>
+                <a href="catalogo.html" class="text-sm font-bold text-[#7A1C32] transition-colors">Catálogo</a>
             
-               <!-- Menú desplegable de Categorías -->
-               <div class="relative">
-                   <button onclick="toggleMenuCategoriasHeader()" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer">
-                       Categorías <i class="fa-solid fa-chevron-down ml-1.5 text-xs"></i>
-                   </button>
-                   <div id="dropdown-categorias-header" class="hidden absolute left-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-50 p-2 divide-y divide-gray-50">
-                       <!-- Se llena dinámicamente con JS -->
-                   </div>
-               </div>
-           </nav>
+                <!-- Menú desplegable de Categorías -->
+                <div class="relative">
+                    <button onclick="toggleMenuCategoriasHeader()" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer">
+                        Categorías <i class="fa-solid fa-chevron-down ml-1.5 text-xs"></i>
+                    </button>
+                    <div id="dropdown-categorias-header" class="hidden absolute left-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-50 p-2 divide-y divide-gray-50">
+                        <!-- Se llena dinámicamente con JS -->
+                    </div>
+                </div>
+            </nav>
 
-           <!-- Zona derecha: Buscador, Usuario dinámico y Carrito -->
-           <div class="flex items-center space-x-4">
+            <!-- Zona derecha: Buscador, Usuario dinámico y Carrito -->
+            <div class="flex items-center space-x-4">
             
-               <!-- 🔍 BARRA DE BÚSQUEDA -->
-               <div class="relative flex items-center">
-                   <div class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors px-3.5 py-2.5 rounded-xl border border-gray-200 shadow-sm">
-                       <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-sm"></i>
-                       <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-sm text-gray-800 focus:outline-none w-32 sm:w-40 md:w-52 placeholder-gray-500 font-medium">
-                   </div>
+                <!-- 🔍 BARRA DE BÚSQUEDA -->
+                <div class="relative flex items-center">
+                    <div class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors px-3.5 py-2.5 rounded-xl border border-gray-200 shadow-sm">
+                        <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-sm"></i>
+                        <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-sm text-gray-800 focus:outline-none w-32 sm:w-40 md:w-52 placeholder-gray-500 font-medium">
+                    </div>
 
-                   <!-- Resultados de búsqueda -->
-                   <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-50 p-2 divide-y divide-gray-50"></div>
-               </div>
+                    <!-- Resultados de búsqueda -->
+                    <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-50 p-2 divide-y divide-gray-50"></div>
+                </div>
 
-               <!-- 👤 USUARIO DINÁMICO (Se llena con JS según sea cliente o admin) -->
-               <div id="contenedor-usuario-header" class="relative">
-                   <!-- Se renderiza automáticamente -->
-               </div>
+                <!-- 👤 USUARIO DINÁMICO (Se llena con JS según sea cliente o admin) -->
+                <div id="contenedor-usuario-header" class="relative">
+                    <!-- Se renderiza automáticamente -->
+                </div>
 
-               <!-- Botón Carrito en Color Cereza Fijo -->
-               <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex-shrink-0">
-                   <i class="fa-solid fa-cart-shopping mr-2 text-white"></i> Carrito 
-                   <span id="cart-count" class="ml-2 bg-white text-[#7A1C32] text-xs px-2.5 py-0.5 rounded-full font-extrabold">0</span>
-               </a>
+                <!-- Botón Carrito en Color Cereza Fijo -->
+                <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex-shrink-0">
+                    <i class="fa-solid fa-cart-shopping mr-2 text-white"></i> Carrito 
+                    <span id="cart-count" class="ml-2 bg-white text-[#7A1C32] text-xs px-2.5 py-0.5 rounded-full font-extrabold">0</span>
+                </a>
 
-           </div>
-       </div>
+            </div>
+        </div>
    </header>
     
     <main class="max-w-7xl mx-auto px-4 py-8">
@@ -224,6 +223,46 @@
                     `;
                 }
             }
+
+            // CARGAR EL CATÁLOGO DESDE EL ARCHIVO CSV
+            fetch('catalogo para codigo.csv')
+                .then(response => response.text())
+                .then(csvText => {
+                    const lines = csvText.split('\n');
+                    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                    const productos = [];
+
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        const currentLine = lines[i].split(',');
+                        const obj = {};
+                        for (let j = 0; j < headers.length; j++) {
+                            obj[headers[j]] = currentLine[j] ? currentLine[j].trim().replace(/^"|"$/g, '') : '';
+                        }
+                        productos.push(obj);
+                    }
+
+                    // Renderizar productos en el contenedor
+                    const grid = document.getElementById('catalog-full-grid');
+                    if (grid && productos.length > 0) {
+                        grid.innerHTML = productos.map(p => `
+                            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div>
+                                    <img src="IMAGENES PRODUCTOS/${p.Imagen || p.imagen || ''}" alt="${p.Nombre || p.nombre || ''}" class="h-48 w-full object-contain rounded-xl mb-4 bg-gray-50 p-2">
+                                    <span class="text-xs text-[#7A1C32] font-bold uppercase">${p.Categoria || p.categoria || ''}</span>
+                                    <h3 class="font-bold text-gray-900 text-base mt-1 mb-2">${p.Nombre || p.nombre || ''}</h3>
+                                </div>
+                                <div>
+                                    <div class="text-lg font-black text-[#7A1C32] mb-3">$${Number(p.Precio || p.precio || 0).toLocaleString()}</div>
+                                    <button onclick="agregarAlCarrito('${p.SKU || p.sku || ''}', '${p.Nombre || p.nombre || ''}', ${p.Precio || p.precio || 0}, 'IMAGENES PRODUCTOS/${p.Imagen || p.imagen || ''}')" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white text-sm font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer">
+                                        <i class="fa-solid fa-cart-plus mr-2"></i> Añadir
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                })
+                .catch(err => console.error("Error al cargar el CSV del catálogo:", err));
         });
     </script>
 
