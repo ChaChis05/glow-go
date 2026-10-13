@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Glow & Go</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans flex items-center justify-center min-h-screen py-10">
+
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 max-w-md w-full mx-4">
+        <div class="text-center mb-6">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 mx-auto mb-3 object-contain">
+            <h1 class="text-2xl font-black text-gray-900">Crear una Cuenta</h1>
+            <p class="text-xs text-gray-500 mt-1">Regístrate para guardar tus pedidos y recibir tus envíos</p>
+        </div>
+
+        <!-- CONTENEDOR DE ERROR -->
+        <div id="mensaje-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center">
+            <!-- Mensaje de error dinámico -->
+        </div>
+
+        <form id="form-registro" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre completo</label>
+                <input type="text" id="reg-nombre" required placeholder="Tu nombre" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Correo electrónico</label>
+                <input type="email" id="reg-correo" required placeholder="ejemplo@correo.com" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Número de celular</label>
+                <input type="tel" id="reg-telefono" required placeholder="3107027780" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Contraseña</label>
+                <input type="password" id="reg-password" required placeholder="••••••••" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+            </div>
+
+            <button type="submit" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-sm cursor-pointer mt-2">
+                Registrarse
+            </button>
+        </form>
+
+        <div class="text-center mt-6 text-xs text-gray-500">
+            ¿Ya tienes una cuenta? <a href="login.html" class="text-[#7A1C32] font-bold hover:underline">Inicia sesión aquí</a>
+        </div>
+        <div class="text-center mt-3">
+            <a href="index.html" class="text-xs text-gray-400 hover:text-gray-600"><i class="fa-solid fa-arrow-left mr-1"></i> Volver a la tienda</a>
+        </div>
+    </div>
+
+    <script>
+        function mostrarError(mensaje) {
+            const contenedorError = document.getElementById("mensaje-error");
+            contenedorError.textContent = mensaje;
+            contenedorError.classList.remove("hidden");
+        }
+
+        document.getElementById("form-registro").addEventListener("submit", function(e) {
+            e.preventDefault();
+            document.getElementById("mensaje-error").classList.add("hidden");
+
+            const nombre = document.getElementById("reg-nombre").value.trim();
+            const correo = document.getElementById("reg-correo").value.trim();
+            const telefono = document.getElementById("reg-telefono").value.trim();
+            const password = document.getElementById("reg-password").value.trim();
+
+            let usuarios = JSON.parse(localStorage.getItem("glow_usuarios")) || [];
+
+            // Verificar si el correo ya está registrado
+            if (usuarios.some(u => u.correo.toLowerCase() === correo.toLowerCase())) {
+                mostrarError("⚠️ Este correo ya se encuentra registrado. Intenta iniciar sesión.");
+                return;
+            }
+
+            // Guardar nuevo usuario
+            usuarios.push({ nombre, correo, telefono, password, fecha: new Date().toLocaleString() });
+            localStorage.setItem("glow_usuarios", JSON.stringify(usuarios));
+
+            // Iniciar sesión automáticamente
+            localStorage.setItem("usuarioLogueado", correo);
+
+            window.location.href = "index.html";
+        });
+    </script>
+</body>
+</html>
