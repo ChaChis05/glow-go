@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Glow & Go</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans flex items-center justify-center min-h-screen">
+
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 max-w-md w-full mx-4">
+        <div class="text-center mb-6">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 mx-auto mb-3 object-contain">
+            <h1 class="text-2xl font-black text-gray-900">Iniciar Sesión</h1>
+            <p class="text-xs text-gray-500 mt-1">Accede a tus pedidos y vive la experiencia Glow & Go</p>
+        </div>
+
+        <!-- CONTENEDOR DE MENSAJE DE ERROR (Oculto por defecto) -->
+        <div id="mensaje-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center">
+            <!-- El texto del error se inyectará aquí -->
+        </div>
+
+        <form id="form-login" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Correo electrónico o número de celular</label>
+                <input type="text" id="login-usuario" required placeholder="ejemplo@correo.com" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Contraseña</label>
+                <input type="password" id="login-password" required placeholder="••••••••" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+            </div>
+
+            <button type="submit" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-sm cursor-pointer mt-2">
+                Iniciar Sesión
+            </button>
+        </form>
+
+        <div class="text-center mt-6 text-xs text-gray-500">
+            ¿No tienes una cuenta? <a href="registro.html" class="text-[#7A1C32] font-bold hover:underline">Regístrate aquí</a>
+        </div>
+        <div class="text-center mt-3">
+            <a href="index.html" class="text-xs text-gray-400 hover:text-gray-600"><i class="fa-solid fa-arrow-left mr-1"></i> Volver a la tienda</a>
+        </div>
+    </div>
+
+    <script>
+        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
+        const PASSWORD_ADMIN = "chachis2905";
+
+        function mostrarError(mensaje) {
+            const contenedorError = document.getElementById("mensaje-error");
+            contenedorError.textContent = mensaje;
+            contenedorError.classList.remove("hidden");
+        }
+
+        document.getElementById("form-login").addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            // Ocultar error previo si lo había
+            document.getElementById("mensaje-error").classList.add("hidden");
+
+            let inputUser = document.getElementById("login-usuario").value.trim();
+            let inputPass = document.getElementById("login-password").value.trim();
+
+            // 1. Validar si es la Administradora (Zaidy)
+            if (inputUser.toLowerCase() === CORREO_ADMIN) {
+                if (inputPass === PASSWORD_ADMIN) {
+                    localStorage.setItem("usuarioLogueado", CORREO_ADMIN);
+                    window.location.href = "index.html";
+                    return;
+                } else {
+                    mostrarError("❌ Contraseña de administrador incorrecta.");
+                    return;
+                }
+            }
+
+            // 2. Validar contra la lista de usuarios registrados
+            let usuariosRegistrados = JSON.parse(localStorage.getItem("glow_usuarios")) || [];
+            let usuarioEncontrado = usuariosRegistrados.find(u => u.correo.toLowerCase() === inputUser.toLowerCase() || u.telefono === inputUser);
+
+            if (!usuarioEncontrado) {
+                mostrarError("⚠️ Este correo o número no se encuentra registrado. Por favor regístrate primero.");
+                return;
+            }
+
+            // Validar contraseña del usuario normal
+            if (usuarioEncontrado.password !== inputPass) {
+                mostrarError("❌ Contraseña incorrecta.");
+                return;
+            }
+
+            // Inicio de sesión exitoso
+            localStorage.setItem("usuarioLogueado", usuarioEncontrado.correo);
+            window.location.href = "index.html";
+        });
+    </script>
+</body>
+</html>
