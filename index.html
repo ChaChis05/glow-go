@@ -9,9 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- Librería para leer archivos Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
     <style>
         @keyframes scrollCinta {
             0% { transform: translateX(0); }
@@ -87,9 +84,9 @@
                            class="bg-transparent text-sm focus:outline-none w-full text-gray-700">
                 </div>
 
-                <!-- USUARIO DINÁMICO (Invitado / Logueado / Admin) -->
+                <!-- 👤 USUARIO DINÁMICO (INICIAR SESIÓN / REGISTRARSE / ADMIN) -->
                 <div id="contenedor-usuario-header" class="relative">
-                    <!-- Se renderiza mediante JavaScript de forma fluida -->
+                    <!-- Se renderiza mediante JavaScript exactamente como lo tenías -->
                 </div>
 
                 <!-- CARRITO -->
@@ -163,7 +160,7 @@
                     ✨ LA HISTORIA DETRÁS DE GLOW & GO ❤️
                 </h2>
                 <p class="text-sm md:text-base leading-relaxed">
-                    Todo comenzó con una necesidad económica y el deseo de salir adelante mientras estudiaba en la universidad. Ante la falta de apoyo económico de mi papá y con los recursos limitados de mi mamá, decidí emprender y construir algo propio que me ayudara con mis gastos universitarios.
+                    Todo comenzó con una necesidad económica y el desejo de salir adelante mientras estudiaba en la universidad. Ante la falta de apoyo económico de mi papá y con los recursos limitados de mi mamá, decidí emprender y construir algo propio que me ayudara con mis gastos universitarios.
                 </p>
                 <p class="text-sm md:text-base leading-relaxed">
                     Así nació Glow & Go, con aproximadamente 30 productos de belleza y cuidado facial. Por eso, nuestro nombre comenzó ligado a ese mundo, sin imaginar que el proyecto crecería tanto. 🌱
@@ -222,6 +219,7 @@
 
     <script>
         const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
+        const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
 
         function toggleMenuUsuario() {
             const dropdown = document.getElementById("dropdown-usuario");
@@ -244,14 +242,15 @@
             }
         });
 
+        // 👤 GESTIÓN DEL BOTÓN DE USUARIO DINÁMICO EN EL HEADER (INICIAR SESIÓN / REGISTRARSE / ADMIN)
         document.addEventListener("DOMContentLoaded", async () => {
             const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
-            const usuarioLogueado = usuarioLogueadoOriginal.toLowerCase().trim();
+            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
             const contenedorUsuario = document.getElementById("contenedor-usuario-header");
 
             if (contenedorUsuario) {
-                if (usuarioLogueado) {
-                    const esAdmin = (usuarioLogueado === CORREO_ADMIN);
+                if (usuarioLimpio) {
+                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
                     
                     contenedorUsuario.innerHTML = `
                         <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-4 py-2.5 rounded-xl text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm">
@@ -265,14 +264,12 @@
                                 <strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong>
                             </div>
                             ${esAdmin ? `
-                                <!-- SI ES ADMIN: Únicamente Panel Administrador -->
                                 <div class="py-1">
                                     <a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors">
                                         <i class="fa-solid fa-gears mr-2"></i> Panel Administrador
                                     </a>
                                 </div>
                             ` : `
-                                <!-- SI ES CLIENTE NORMAL: Únicamente Mis pedidos -->
                                 <div class="py-1">
                                     <a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors">
                                         <i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos
@@ -296,7 +293,7 @@
             }
 
             actualizarContadorCarrito();
-            await cargarCintaDirectaExcel();
+            await cargarCintaDirectaCSV();
         });
 
         function actualizarContadorCarrito() {
@@ -311,30 +308,44 @@
             if (cartCount) cartCount.textContent = totalItems;
         }
 
-        const ARCHIVO_EXCEL = "catalogo%20para%20codigo.xlsx";
+        const ARCHIVO_CSV = "catalogo.csv";
         let productosCargados = [];
 
-        async function cargarCintaDirectaExcel() {
+        async function cargarCintaDirectaCSV() {
             const contenedor = document.getElementById("cinta-productos");
             if (!contenedor) return;
 
             try {
-                const respuesta = await fetch(ARCHIVO_EXCEL + "?v=" + Date.now(), { cache: "no-store" });
-                if (!respuesta.ok) throw new Error("No se pudo leer el archivo Excel.");
+                const respuesta = await fetch(ARCHIVO_CSV + "?v=" + Date.now(), { cache: "no-store" });
+                if (!respuesta.ok) throw new Error("No se pudo leer el archivo CSV.");
 
-                const datos = await respuesta.arrayBuffer();
-                const libro = XLSX.read(datos, { type: "array" });
-                const filas = XLSX.utils.sheet_to_json(libro.Sheets[libro.SheetNames[0]], { defval: "" });
+                const csvText = await respuesta.text();
+                const lines = csvText.split('\n');
+                if (lines.length === 0) return;
 
-                let productos = filas.map((fila, indice) => {
+                const headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, '').replace(/^\ufeff/, ''));
+                const filasBrutas = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    const currentLine = lines[i].split(';');
+                    const fila = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        fila[headers[j]] = currentLine[j] ? currentLine[j].trim().replace(/^"|"$/g, '') : '';
+                    }
+                    filasBrutas.push(fila);
+                }
+
+                let productos = filasBrutas.map((fila, indice) => {
                     const nombre = obtenerCampo(fila, ["nombre del producto", "nombre", "producto", "articulo"]);
                     if (!nombre) return null;
 
                     let precio = obtenerCampo(fila, ["precio", "valor", "pvp"]);
                     if (typeof precio === "number") {
                         precio = "$" + precio.toLocaleString("es-CO");
-                    } else if (!String(precio).startsWith("$")) {
-                        precio = "$" + String(precio).trim();
+                    } else {
+                        let precioNum = Number(String(precio).replace(/[^0-9]/g, '')) || 0;
+                        precio = "$" + precioNum.toLocaleString("es-CO");
                     }
 
                     const descripcion = obtenerCampo(fila, ["especificaciones", "descripcion", "detalle", "caracteristicas"]);
@@ -344,7 +355,7 @@
                     const listaImagenes = procesarImagenes(campoImagen);
 
                     return {
-                        id: String(sku || ("EXCEL-" + (indice + 1))),
+                        id: String(sku || ("CSV-" + (indice + 1))),
                         sku: String(sku || ("GLW-" + String(indice + 1).padStart(3, "0"))),
                         nombre: String(nombre).trim(),
                         descripcion: String(descripcion || "Producto disponible en Glow & Go.").trim(),
@@ -358,7 +369,7 @@
                 productosCargados = productos;
                 dibujarCinta(productos);
             } catch (error) {
-                console.error("Error al cargar la cinta:", error);
+                console.error("Error al cargar la cinta CSV:", error);
             }
         }
 
@@ -385,7 +396,9 @@
             return partes.map(img => {
                 if (img.startsWith("http") || img.startsWith("/")) return img;
                 img = img.replace(/^(\.\/)?(IMAGENES PRODUCTOS\/)?/i, "");
-                if (!img.includes(".")) img += ".webp";
+                if (!img.toLowerCase().endsWith(".webp") && !img.toLowerCase().endsWith(".jpg") && !img.toLowerCase().endsWith(".png")) {
+                    img += ".webp";
+                }
                 return "IMAGENES PRODUCTOS/" + img;
             });
         }
@@ -417,6 +430,9 @@
             }).join("");
         }
 
+        // ==========================================
+        // 🔍 MODAL DE DETALLE CON LUPA Y ZOOM RESTAURADO (SIN ALERTAS)
+        // ==========================================
         window.abrirDetalleProducto = function(indice) {
             const ultimos10 = productosCargados.slice(-10).reverse();
             const producto = ultimos10[Number(indice)];
@@ -433,7 +449,17 @@
                         <div class="w-full bg-gray-50 rounded-2xl flex items-center justify-center p-4 h-64 md:h-80 zoom-container mb-3" id="zoom-box">
                             <img id="imagen-principal-modal" src="${imgs[imagenActualIndex]}" class="w-full h-full object-contain pointer-events-none" onerror="this.src='logo_glow.jpg';">
                         </div>
-                        <p class="text-xs text-gray-400 italic mb-3"><i class="fa-solid fa-magnifying-glass mr-1"></i> Pasa el cursor para acercar</p>
+                        <p class="text-xs text-gray-400 italic mb-3"><i class="fa-solid fa-magnifying-glass mr-1"></i> Pasa el cursor para hacer zoom</p>
+                        
+                        ${imgs.length > 1 ? `
+                            <div class="flex items-center gap-2 overflow-x-auto w-full py-1">
+                                ${imgs.map((img, i) => `
+                                    <button type="button" onclick="cambiarImagenModal(${i})" class="w-14 h-14 rounded-xl border-2 overflow-hidden bg-white p-1 flex-shrink-0 ${i === imagenActualIndex ? 'border-[#7A1C32]' : 'border-gray-200 opacity-70'}">
+                                        <img src="${img}" class="w-full h-full object-contain">
+                                    </button>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     </div>
                     <div class="flex flex-col justify-between">
                         <div>
@@ -474,6 +500,11 @@
                 });
             }
 
+            window.cambiarImagenModal = function(index) {
+                imagenActualIndex = index;
+                actualizarVistaModal();
+            };
+
             actualizarVistaModal();
             modal.classList.remove("hidden");
         };
@@ -496,7 +527,6 @@
             localStorage.setItem("carrito", JSON.stringify(carrito));
             actualizarContadorCarrito();
             cerrarModalDetalle();
-            alert(`¡"${producto.nombre}" se añadió al carrito!`);
         }
     </script>
 </body>
