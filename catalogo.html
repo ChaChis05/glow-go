@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Completo - Glow & Go</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- ESTILOS CSS PERSONALIZADOS -->
+    <style>
+        :root {
+            --color-cereza: #7A1C32;
+            --color-cereza-oscuro: #621628;
+            --color-dorado: #D4AF37;
+        }
+
+        .bg-indigo-600 { background-color: var(--color-cereza) !important; }
+        .bg-indigo-600:hover { background-color: var(--color-cereza-oscuro) !important; }
+        .hover\:bg-indigo-700:hover { background-color: var(--color-cereza-oscuro) !important; }
+        .text-indigo-600 { color: var(--color-cereza) !important; }
+        .hover\:text-indigo-600:hover { color: var(--color-cereza) !important; }
+        .bg-indigo-50 { background-color: rgba(122, 28, 50, 0.08) !important; }
+        .hover\:bg-indigo-100:hover { background-color: rgba(122, 28, 50, 0.15) !important; }
+        .text-indigo-700 { color: var(--color-cereza) !important; }
+        .text-indigo-800 { color: var(--color-cereza) !important; }
+        .shadow-indigo-200 { box-shadow: 0 10px 15px -3px rgba(122, 28, 50, 0.2) !important; }
+
+        .barra-catalogo-estetica {
+            background: linear-gradient(135deg, #7A1C32 0%, #521221 100%);
+            border-top: 2px solid #D4AF37;
+            border-bottom: 2px solid #D4AF37;
+            box-shadow: 0 4px 20px rgba(122, 28, 50, 0.25);
+        }
+
+        header.sticky {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 9999 !important;
+            background-color: #ffffff !important;
+        }
+
+        body {
+            padding-top: 96px;
+        }
+
+        #modal-producto {
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+   <!-- ========================================== -->
+   <!-- 📌 HEADER / NAVEGACIÓN PRINCIPAL -->
+   <!-- ========================================== -->
+   <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
+        
+            <!-- Logotipo de Glow & Go -->
+            <div class="flex items-center space-x-3 flex-shrink-0">
+                <a href="index.html" class="flex items-center">
+                    <img src="logo_glow.jpg" alt="Glow & Go" class="h-14 sm:h-16 lg:h-20 w-auto object-contain">
+                </a>
+            </div>
+
+            <!-- Enlaces de navegación centrales -->
+            <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
+                <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
+                <a href="catalogo.html" class="text-xs sm:text-sm font-bold text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
+            
+                <!-- Menú desplegable de Categorías con posición inteligente para móviles -->
+                <div class="relative">
+                    <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
+                        Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                    </button>
+                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50">
+                        <!-- Se llena dinámicamente con JS -->
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Zona derecha: Buscador, Usuario dinámico y Carrito -->
+            <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-between lg:justify-end">
+            
+                <!-- 🔍 BARRA DE BÚSQUEDA -->
+                <div class="relative flex items-center flex-grow lg:w-64 xl:w-80">
+                    <div class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors px-3 py-1.5 sm:py-2.5 rounded-xl border border-gray-200 shadow-sm w-full">
+                        <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
+                        <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
+                    </div>
+
+                    <!-- Resultados de búsqueda -->
+                    <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
+                </div>
+
+                <!-- 👤 USUARIO DINÁMICO -->
+                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
+
+                <!-- Botón Carrito en Color Cereza Fijo -->
+                <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
+                    <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2 text-white"></i> <span>Carrito</span> 
+                    <span id="cart-count" class="ml-1.5 sm:ml-2 bg-white text-[#7A1C32] text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
+                </a>
+
+            </div>
+        </div>
+   </header>
+    
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- 🌟 BARRA ESTÉTICA DE TÍTULO -->
+        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-10 text-center relative overflow-hidden">
+            <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
+            <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
+            <h1 class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">
+                Catálogo Completo de Productos
+            </h1>
+        </div>
+
+        <!-- SECCIÓN DE PRODUCTOS EN ANCHO COMPLETO -->
+        <section>
+            <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </section>
+    </main>
+    
+    <!-- ========================================== -->
+    <!-- 📌 PIE DE PÁGINA -->
+    <!-- ========================================== -->
+    <footer class="bg-white border-t border-gray-100 py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 w-auto mx-auto object-contain">
+            <p class="text-sm text-gray-500 font-medium">Glow & Go — Tu mundo, en un solo lugar.</p>
+            <div class="text-xs text-gray-600 font-semibold space-y-1">
+                <p>📍 Fundado en El Socorro, Santander</p>
+                <p>👩‍💼 Fundadora: Zaidy Cano</p>
+                <p>📞 Contacto personal: <a href="https://wa.me/573107027780?text=Hola,%20Zaidy,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="text-[#7A1C32] font-bold hover:underline">3107027780</a></p>
+            </div>
+            <p class="text-xs text-gray-400 pt-2">&copy; 2026 Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- BOTÓN WHATSAPP -->
+    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go%20y%20quiero%20más%20información" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <!-- SCRIPT GENERAL Y LÓGICA DE USUARIO DINÁMICO -->
+    <script src="js/app.js"></script>
+
+    <script>
+        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
+        const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
+
+        function toggleMenuUsuario() {
+            const dropdown = document.getElementById("dropdown-usuario");
+            if (dropdown) {
+                dropdown.classList.toggle("hidden");
+            }
+        }
+
+        function cerrarSesionUsuario() {
+            localStorage.removeItem("usuarioLogueado");
+            localStorage.removeItem("tokenUsuario");
+            window.location.reload();
+        }
+
+        window.addEventListener("click", function(e) {
+            const dropdownUsr = document.getElementById("dropdown-usuario");
+            const btnUsr = document.getElementById("btn-usuario-activo");
+            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
+                dropdownUsr.classList.add("hidden");
+            }
+        });
+
+        let listaProductosGlobal = [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
+            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
+            const contenedorUsuario = document.getElementById("contenedor-usuario-header");
+
+            if (contenedorUsuario) {
+                if (usuarioLimpio) {
+                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
+                    
+                    contenedorUsuario.innerHTML = `
+                        <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-user mr-1.5 sm:mr-2 text-[#7A1C32]"></i>
+                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${usuarioLogueadoOriginal}</span>
+                            <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                        </button>
+                        <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
+                            <div class="px-4 py-3 text-xs text-gray-500">
+                                Sesión iniciada como<br>
+                                <strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong>
+                            </div>
+                            ${esAdmin ? `
+                                <div class="py-1">
+                                    <a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-gears mr-2"></i> Panel Administrador
+                                    </a>
+                                </div>
+                            ` : `
+                                <div class="py-1">
+                                    <a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos
+                                    </a>
+                                </div>
+                            `}
+                            <div class="pt-1">
+                                <button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    contenedorUsuario.innerHTML = `
+                        <a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-user text-[#7A1C32] mr-1.5 sm:mr-2"></i> <span>Ingresar</span>
+                        </a>
+                    `;
+                }
+            }
+
+            // CARGAR Y LEER EL CSV CON EXTENSIÓN AUTOMÁTICA EN IMÁGENES WEBP
+            fetch('catalogo.csv')
+                .then(response => response.text())
+                .then(csvText => {
+                    const lines = csvText.split('\n');
+                    if (lines.length === 0) return;
+                    
+                    const headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, '').replace(/^\ufeff/, ''));
+                    const productos = [];
+
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        const currentLine = lines[i].split(';');
+                        const obj = {};
+                        for (let j = 0; j < headers.length; j++) {
+                            obj[headers[j]] = currentLine[j] ? currentLine[j].trim().replace(/^"|"$/g, '') : '';
+                        }
+                        productos.push(obj);
+                    }
+
+                    listaProductosGlobal = productos.map((p, index) => {
+                        let brutoImagenes = p['Imagen (Nombre o URL)'] ? String(p['Imagen (Nombre o URL)']).trim() : "";
+                        let arrayRutas = [];
+                        if (brutoImagenes) {
+                            const listaNombres = brutoImagenes.split(",");
+                            arrayRutas = listaNombres.map(nombre => {
+                                let limpio = nombre.trim();
+                                if (!limpio) return "";
+                                const conExt = limpio.toLowerCase().endsWith(".webp") || limpio.toLowerCase().endsWith(".jpg") || limpio.toLowerCase().endsWith(".png") ? limpio : `${limpio}.webp`;
+                                return conExt.includes("IMAGENES PRODUCTOS") ? conExt : `IMAGENES PRODUCTOS/${conExt}`;
+                            }).filter(Boolean);
+                        }
+                        if (arrayRutas.length === 0) arrayRutas = ["logo_glow.jpg"];
+
+                        let precioRaw = p['Precio'] || '0';
+                        let precioNum = Number(precioRaw.replace(/[^0-9]/g, '')) || 0;
+
+                        return {
+                            id: index + 1,
+                            categoria: p['Categoría'] || '',
+                            nombre: p['Nombre del Producto'] || 'Sin nombre',
+                            sku: p['Referencia / SKU'] || `SKU-${index + 1}`,
+                            descripcion: p['Especificaciones'] || 'Sin especificaciones.',
+                            precioNum: precioNum,
+                            precioStr: `$${precioNum.toLocaleString()}`,
+                            imagenes: arrayRutas
+                        };
+                    });
+
+                    // Renderizar productos en el grid completo
+                    const grid = document.getElementById('catalog-full-grid');
+                    if (grid && listaProductosGlobal.length > 0) {
+                        grid.innerHTML = listaProductosGlobal.map(p => {
+                            return `
+                                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                    <div>
+                                        <img src="${p.imagenes[0]}" alt="${p.nombre}" onerror="this.src='logo_glow.jpg'" class="h-48 w-full object-contain rounded-xl mb-4 bg-gray-50 p-2 cursor-pointer" onclick="abrirModalProducto(${p.id})">
+                                        <span class="text-xs text-[#7A1C32] font-bold uppercase">${p.categoria}</span>
+                                        <h3 class="font-bold text-gray-900 text-base mt-1 mb-2 cursor-pointer hover:text-[#7A1C32]" onclick="abrirModalProducto(${p.id})">${p.nombre}</h3>
+                                    </div>
+                                    <div>
+                                        <div class="text-lg font-black text-[#7A1C32] mb-3">${p.precioStr}</div>
+                                        <button onclick="agregarAlCarritoPorId(${p.id})" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white text-sm font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer">
+                                            <i class="fa-solid fa-cart-plus mr-2"></i> Añadir
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                })
+                .catch(err => console.error("Error al cargar el CSV del catálogo:", err));
+        });
+
+        // ==========================================
+        // 🛒 FUNCIONES DE CARRITO Y MODAL (SIN ALERTAS MOLESTAS)
+        // ==========================================
+        window.agregarAlCarritoPorId = function(id) {
+            const prod = listaProductosGlobal.find(p => p.id === id);
+            if (!prod) return;
+
+            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            const itemExistente = carrito.find(item => item.sku === prod.sku || item.id === prod.id);
+
+            if (itemExistente) {
+                itemExistente.cantidad = (itemExistente.cantidad || 1) + 1;
+            } else {
+                carrito.push({
+                    id: prod.id,
+                    sku: prod.sku,
+                    nombre: prod.nombre,
+                    precio: prod.precioStr,
+                    precioNum: prod.precioNum,
+                    imagenes: prod.imagenes,
+                    cantidad: 1
+                });
+            }
+
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            actualizarContadorCarritoHeader();
+        };
+
+        function actualizarContadorCarritoHeader() {
+            let carrito = [];
+            try {
+                carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            } catch (e) { carrito = []; }
+            const totalItems = carrito.reduce((sum, item) => sum + (Number(item.cantidad) || 0), 0);
+            const badge = document.getElementById("cart-count");
+            if (badge) badge.textContent = totalItems;
+        }
+
+        window.abrirModalProducto = function(id) {
+            const prod = listaProductosGlobal.find(p => p.id === id);
+            if (!prod) return;
+
+            document.getElementById("modal-sku").textContent = prod.sku;
+            document.getElementById("modal-nombre").textContent = prod.nombre;
+            document.getElementById("modal-categoria").textContent = prod.categoria;
+            document.getElementById("modal-descripcion").textContent = prod.descripcion;
+            document.getElementById("modal-precio").textContent = prod.precioStr;
+
+            const modalImg = document.getElementById("modal-img");
+            const miniaturasContainer = document.getElementById("modal-galeria-miniaturas");
+
+            if (prod.imagenes && prod.imagenes.length > 0) {
+                modalImg.src = prod.imagenes[0];
+                miniaturasContainer.innerHTML = prod.imagenes.map((img, idx) => `
+                    <button onclick="document.getElementById('modal-img').src='${img}'" class="w-16 h-16 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 p-1 flex-shrink-0 cursor-pointer hover:border-[#7A1C32]">
+                        <img src="${img}" class="w-full h-full object-contain">
+                    </button>
+                `).join('');
+            } else {
+                modalImg.src = "logo_glow.jpg";
+                miniaturasContainer.innerHTML = "";
+            }
+
+            const btnAgregarModal = document.getElementById("modal-btn-agregar");
+            btnAgregarModal.onclick = function() {
+                agregarAlCarritoPorId(prod.id);
+                cerrarModalProducto();
+            };
+
+            document.getElementById("modal-producto").classList.remove("hidden");
+        };
+
+        window.cerrarModalProducto = function() {
+            document.getElementById("modal-producto").classList.add("hidden");
+        };
+    </script>
+
+    <!-- 📌 MODAL / VENTANA DETALLE DE PRODUCTO -->
+    <div id="modal-producto" class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full overflow-hidden relative animate-in fade-in zoom-in duration-200">
+            <button onclick="cerrarModalProducto()" class="absolute top-5 right-5 bg-gray-100 hover:bg-gray-200 text-gray-700 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl transition-colors z-10 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 p-8 md:p-12 gap-10 items-center">
+                <div class="flex flex-col gap-4">
+                    <div class="relative overflow-hidden rounded-2xl bg-gray-50 border border-gray-100 h-80 md:h-[350px] flex items-center justify-center group cursor-zoom-in shadow-inner" id="container-zoom" onmousemove="zoomIn(event)" onmouseleave="zoomOut()">
+                        <img id="modal-img" src="" alt="Producto" class="object-contain h-full w-full transition-transform duration-200 origin-center p-4">
+                        <span class="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg pointer-events-none font-medium">Pasa el cursor para hacer zoom</span>
+                    </div>
+                    
+                    <div id="modal-galeria-miniaturas" class="flex items-center justify-center gap-3 overflow-x-auto py-1"></div>
+                </div>
+
+                <div class="flex flex-col justify-between h-full py-2">
+                    <div>
+                        <span id="modal-sku" class="text-sm text-[#7A1C32] font-bold uppercase tracking-wider"></span>
+                        <h2 id="modal-nombre" class="text-3xl md:text-4xl font-black text-gray-900 mt-2 mb-3 leading-tight"></h2>
+                        <span id="modal-categoria" class="inline-block bg-[#7A1C32]/10 text-[#7A1C32] text-sm px-3.5 py-1.5 rounded-lg font-semibold mb-6"></span>
+                        <p id="modal-descripcion" class="text-gray-600 text-base md:text-lg leading-relaxed mb-8"></p>
+                    </div>
+
+                    <div>
+                        <div class="text-4xl md:text-5xl font-black text-[#7A1C32] mb-8" id="modal-precio"></div>
+                        <button id="modal-btn-agregar" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-4 px-8 rounded-2xl transition-all shadow-xl shadow-[#7A1C32]/20 flex items-center justify-center text-lg cursor-pointer">
+                            <i class="fa-solid fa-cart-shopping mr-3 text-xl"></i> Agregar al carrito
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function zoomIn(e) {
+            const container = e.currentTarget;
+            const img = document.getElementById("modal-img");
+            const rect = container.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / container.offsetWidth) * 100;
+            const y = ((e.clientY - rect.top) / container.offsetHeight) * 100;
+            
+            img.style.transformOrigin = `${x}% ${y}%`;
+            img.style.transform = "scale(2.2)";
+        }
+
+        function zoomOut() {
+            const img = document.getElementById("modal-img");
+            img.style.transformOrigin = "center center";
+            img.style.transform = "scale(1)";
+        }
+    </script>
+</body>
+</html>
