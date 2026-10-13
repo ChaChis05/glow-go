@@ -1,0 +1,10 @@
+/* Estilos globales y personalizados para la tienda */
+body {
+    background-color: #f3f4f6;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Transiciones suaves para los carruseles e imágenes */
+.group:hover button {
+    opacity: 1 !important;
+}
