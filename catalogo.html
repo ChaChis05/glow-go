@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Completo - Glow & Go</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- ESTILOS CSS PERSONALIZADOS -->
+    <style>
+        :root {
+            --color-cereza: #7A1C32;
+            --color-cereza-oscuro: #621628;
+            --color-dorado: #D4AF37;
+        }
+
+        .bg-indigo-600 { background-color: var(--color-cereza) !important; }
+        .bg-indigo-600:hover { background-color: var(--color-cereza-oscuro) !important; }
+        .hover\:bg-indigo-700:hover { background-color: var(--color-cereza-oscuro) !important; }
+        .text-indigo-600 { color: var(--color-cereza) !important; }
+        .hover\:text-indigo-600:hover { color: var(--color-cereza) !important; }
+        .bg-indigo-50 { background-color: rgba(122, 28, 50, 0.08) !important; }
+        .hover\:bg-indigo-100:hover { background-color: rgba(122, 28, 50, 0.15) !important; }
+        .text-indigo-700 { color: var(--color-cereza) !important; }
+        .text-indigo-800 { color: var(--color-cereza) !important; }
+        .shadow-indigo-200 { box-shadow: 0 10px 15px -3px rgba(122, 28, 50, 0.2) !important; }
+
+        .barra-catalogo-estetica {
+            background: linear-gradient(135deg, #7A1C32 0%, #521221 100%);
+            border-top: 2px solid #D4AF37;
+            border-bottom: 2px solid #D4AF37;
+            box-shadow: 0 4px 20px rgba(122, 28, 50, 0.25);
+        }
+
+        header.sticky {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 1000 !important;
+            background-color: #ffffff !important;
+        }
+
+        body {
+            padding-top: 96px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+   <!-- ========================================== -->
+   <!-- 📌 HEADER / NAVEGACIÓN PRINCIPAL -->
+   <!-- ========================================== -->
+   <header class="bg-white border-b border-gray-100 sticky shadow-sm">
+       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between gap-4">
+        
+           <!-- Logotipo de Glow & Go -->
+           <div class="flex items-center space-x-3 flex-shrink-0 py-2">
+               <a href="index.html" class="flex items-center">
+                   <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 md:h-20 w-auto object-contain">
+               </a>
+           </div>
+
+           <!-- Enlaces de navegación centrales -->
+           <nav class="hidden md:flex items-center space-x-6">
+               <a href="index.html" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors">Inicio</a>
+               <a href="catalogo.html" class="text-sm font-bold text-[#7A1C32] transition-colors">Catálogo</a>
+            
+               <!-- Menú desplegable de Categorías -->
+               <div class="relative">
+                   <button onclick="toggleMenuCategoriasHeader()" class="text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer">
+                       Categorías <i class="fa-solid fa-chevron-down ml-1.5 text-xs"></i>
+                   </button>
+                   <div id="dropdown-categorias-header" class="hidden absolute left-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-50 p-2 divide-y divide-gray-50">
+                       <!-- Se llena dinámicamente con JS -->
+                   </div>
+               </div>
+           </nav>
+
+           <!-- Zona derecha: Buscador, Usuario dinámico y Carrito -->
+           <div class="flex items-center space-x-4">
+            
+               <!-- 🔍 BARRA DE BÚSQUEDA -->
+               <div class="relative flex items-center">
+                   <div class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors px-3.5 py-2.5 rounded-xl border border-gray-200 shadow-sm">
+                       <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-sm"></i>
+                       <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-sm text-gray-800 focus:outline-none w-32 sm:w-40 md:w-52 placeholder-gray-500 font-medium">
+                   </div>
+
+                   <!-- Resultados de búsqueda -->
+                   <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-50 p-2 divide-y divide-gray-50"></div>
+               </div>
+
+               <!-- 👤 USUARIO DINÁMICO (Se llena con JS según sea cliente o admin) -->
+               <div id="contenedor-usuario-header" class="relative">
+                   <!-- Se renderiza automáticamente -->
+               </div>
+
+               <!-- Botón Carrito en Color Cereza Fijo -->
+               <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex-shrink-0">
+                   <i class="fa-solid fa-cart-shopping mr-2 text-white"></i> Carrito 
+                   <span id="cart-count" class="ml-2 bg-white text-[#7A1C32] text-xs px-2.5 py-0.5 rounded-full font-extrabold">0</span>
+               </a>
+
+           </div>
+       </div>
+   </header>
+    
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- 🌟 BARRA ESTÉTICA DE TÍTULO -->
+        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-10 text-center relative overflow-hidden">
+            <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
+            <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
+            <h1 class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">
+                Catálogo Completo de Productos
+            </h1>
+        </div>
+
+        <!-- SECCIÓN DE PRODUCTOS EN ANCHO COMPLETO -->
+        <section>
+            <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </section>
+    </main>
+    
+    <!-- ========================================== -->
+    <!-- 📌 PIE DE PÁGINA -->
+    <!-- ========================================== -->
+    <footer class="bg-white border-t border-gray-100 py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 w-auto mx-auto object-contain">
+            <p class="text-sm text-gray-500 font-medium">Glow & Go — Tu mundo, en un solo lugar.</p>
+            <div class="text-xs text-gray-600 font-semibold space-y-1">
+                <p>📍 Fundado en El Socorro, Santander</p>
+                <p>👩‍💼 Fundadora: Zaidy Cano</p>
+                <p>📞 Contacto personal: <a href="https://wa.me/573107027780?text=Hola,%20Zaidy,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="text-[#7A1C32] font-bold hover:underline">3107027780</a></p>
+            </div>
+            <p class="text-xs text-gray-400 pt-2">&copy; 2026 Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- BOTÓN WHATSAPP -->
+    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go%20y%20quiero%20más%20información" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <!-- SCRIPT GENERAL Y LÓGICA DE USUARIO DINÁMICO -->
+    <script src="js/app.js"></script>
+
+    <script>
+        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
+        const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
+
+        function toggleMenuUsuario() {
+            const dropdown = document.getElementById("dropdown-usuario");
+            if (dropdown) {
+                dropdown.classList.toggle("hidden");
+            }
+        }
+
+        function cerrarSesionUsuario() {
+            localStorage.removeItem("usuarioLogueado");
+            localStorage.removeItem("tokenUsuario");
+            window.location.reload();
+        }
+
+        window.addEventListener("click", function(e) {
+            const dropdownUsr = document.getElementById("dropdown-usuario");
+            const btnUsr = document.getElementById("btn-usuario-activo");
+            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
+                dropdownUsr.classList.add("hidden");
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
+            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
+            const contenedorUsuario = document.getElementById("contenedor-usuario-header");
+
+            if (contenedorUsuario) {
+                if (usuarioLimpio) {
+                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
+                    
+                    contenedorUsuario.innerHTML = `
+                        <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-4 py-2.5 rounded-xl text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm">
+                            <i class="fa-solid fa-user mr-2 text-[#7A1C32]"></i>
+                            <span class="max-w-[120px] truncate">${usuarioLogueadoOriginal}</span>
+                            <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
+                        </button>
+                        <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
+                            <div class="px-4 py-3 text-xs text-gray-500">
+                                Sesión iniciada como<br>
+                                <strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong>
+                            </div>
+                            ${esAdmin ? `
+                                <!-- SI ES ADMIN: Únicamente Panel Administrador -->
+                                <div class="py-1">
+                                    <a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-gears mr-2"></i> Panel Administrador
+                                    </a>
+                                </div>
+                            ` : `
+                                <!-- SI ES CLIENTE NORMAL: Únicamente Mis pedidos -->
+                                <div class="py-1">
+                                    <a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos
+                                    </a>
+                                </div>
+                            `}
+                            <div class="pt-1">
+                                <button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    contenedorUsuario.innerHTML = `
+                        <a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center shadow-sm">
+                            <i class="fa-solid fa-user text-[#7A1C32] mr-2"></i> Iniciar sesión / Registrarse
+                        </a>
+                    `;
+                }
+            }
+        });
+    </script>
+
+    <!-- 📌 MODAL / VENTANA DETALLE DE PRODUCTO -->
+    <div id="modal-producto" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full overflow-hidden relative animate-in fade-in zoom-in duration-200">
+            <button onclick="cerrarModalProducto()" class="absolute top-5 right-5 bg-gray-100 hover:bg-gray-200 text-gray-700 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl transition-colors z-10 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 p-8 md:p-12 gap-10 items-center">
+                <div class="flex flex-col gap-4">
+                    <div class="relative overflow-hidden rounded-2xl bg-gray-50 border border-gray-100 h-80 md:h-[350px] flex items-center justify-center group cursor-zoom-in shadow-inner" id="container-zoom" onmousemove="zoomIn(event)" onmouseleave="zoomOut()">
+                        <img id="modal-img" src="" alt="Producto" class="object-contain h-full w-full transition-transform duration-200 origin-center p-4">
+                        <span class="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg pointer-events-none font-medium">Pasa el cursor para hacer zoom</span>
+                    </div>
+                    
+                    <div id="modal-galeria-miniaturas" class="flex items-center justify-center gap-3 overflow-x-auto py-1"></div>
+                </div>
+
+                <div class="flex flex-col justify-between h-full py-2">
+                    <div>
+                        <span id="modal-sku" class="text-sm text-[#7A1C32] font-bold uppercase tracking-wider"></span>
+                        <h2 id="modal-nombre" class="text-3xl md:text-4xl font-black text-gray-900 mt-2 mb-3 leading-tight"></h2>
+                        <span id="modal-categoria" class="inline-block bg-[#7A1C32]/10 text-[#7A1C32] text-sm px-3.5 py-1.5 rounded-lg font-semibold mb-6"></span>
+                        <p id="modal-descripcion" class="text-gray-600 text-base md:text-lg leading-relaxed mb-8"></p>
+                    </div>
+
+                    <div>
+                        <div class="text-4xl md:text-5xl font-black text-[#7A1C32] mb-8" id="modal-precio"></div>
+                        <button id="modal-btn-agregar" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-4 px-8 rounded-2xl transition-all shadow-xl shadow-[#7A1C32]/20 flex items-center justify-center text-lg cursor-pointer">
+                            <i class="fa-solid fa-cart-shopping mr-3 text-xl"></i> Agregar al carrito
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function zoomIn(e) {
+            const container = e.currentTarget;
+            const img = document.getElementById("modal-img");
+            const rect = container.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / container.offsetWidth) * 100;
+            const y = ((e.clientY - rect.top) / container.offsetHeight) * 100;
+            
+            img.style.transformOrigin = `${x}% ${y}%`;
+            img.style.transform = "scale(2.2)";
+        }
+
+        function zoomOut() {
+            const img = document.getElementById("modal-img");
+            img.style.transformOrigin = "center center";
+            img.style.transform = "scale(1)";
+        }
+    </script>
+</body>
+</html>
