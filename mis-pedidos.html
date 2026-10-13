@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Pedidos - Glow & Go</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librería para generar PDFs automáticos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --color-cereza: #7A1C32;
+            --color-cereza-oscuro: #621628;
+            --color-dorado: #D4AF37;
+        }
+        .barra-estetica {
+            background: linear-gradient(135deg, #7A1C32 0%, #521221 100%);
+            border-top: 2px solid #D4AF37;
+            border-bottom: 2px solid #D4AF37;
+        }
+        header.sticky {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 9999 !important;
+            background-color: #ffffff !important;
+        }
+        body {
+            padding-top: 96px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
+            <div class="flex items-center space-x-3 flex-shrink-0">
+                <a href="index.html" class="flex items-center">
+                    <img src="logo_glow.jpg" alt="Glow & Go" class="h-14 sm:h-16 lg:h-20 w-auto object-contain">
+                </a>
+            </div>
+
+            <!-- Navegación central con menú desplegable adaptado -->
+            <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
+                <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
+                <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
+                
+                <div class="relative">
+                    <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
+                        Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                    </button>
+                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50">
+                        <!-- Se llena dinámicamente con JS -->
+                    </div>
+                </div>
+            </nav>
+
+            <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-between lg:justify-end">
+                <!-- USUARIO DINÁMICO -->
+                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
+
+                <!-- Botón de Carrito -->
+                <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
+                    <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2"></i> <span>Carrito</span> 
+                    <span id="cart-count" class="ml-1.5 sm:ml-2 bg-white text-[#7A1C32] text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-10">
+        <div class="barra-estetica rounded-2xl py-5 px-6 mb-8 text-center text-white relative overflow-hidden">
+            <h1 class="text-2xl md:text-3xl font-black tracking-wide uppercase">📦 Historial de Mis Pedidos</h1>
+            <p class="text-xs text-amber-200 mt-1">Consulta el estado de tus compras, número de guía y descarga tu comprobante en PDF</p>
+        </div>
+
+        <div id="lista-mis-pedidos" class="space-y-4">
+            <!-- Se llena con JavaScript -->
+        </div>
+
+        <div id="sin-pedidos" class="hidden text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
+            <i class="fa-solid fa-box-open text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-xl font-bold text-gray-700 mb-2">No tienes pedidos registrados</h2>
+            <p class="text-gray-500 text-sm mb-6">Cuando finalices un pedido por WhatsApp, aparecerá reflejado aquí.</p>
+            <a href="catalogo.html" class="inline-block bg-[#7A1C32] text-white font-extrabold px-6 py-3 rounded-xl text-sm shadow-md">Ir al Catálogo</a>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-gray-100 py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 w-auto mx-auto object-contain">
+            <p class="text-sm text-gray-500 font-medium">Glow & Go — Tu mundo, en un solo lugar.</p>
+            <div class="text-xs text-gray-600 font-semibold space-y-1">
+                <p>📍 Fundado en El Socorro, Santander</p>
+                <p>👩‍💼 Fundadora: Zaidy Cano</p>
+                <p>📞 Contacto personal: <a href="https://wa.me/573107027780" class="text-[#7A1C32] font-bold">3107027780</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPT GENERAL Y DE LÓGICA -->
+    <script src="js/app.js"></script>
+    <script>
+        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
+        const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
+
+        function toggleMenuUsuario() {
+            const dropdown = document.getElementById("dropdown-usuario");
+            if (dropdown) dropdown.classList.toggle("hidden");
+        }
+
+        function cerrarSesionUsuario() {
+            localStorage.removeItem("usuarioLogueado");
+            localStorage.removeItem("tokenUsuario");
+            window.location.reload();
+        }
+
+        window.addEventListener("click", function(e) {
+            const dropdownUsr = document.getElementById("dropdown-usuario");
+            const btnUsr = document.getElementById("btn-usuario-activo");
+            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
+                dropdownUsr.classList.add("hidden");
+            }
+        });
+
+        function convertirPrecioANumero(precioStr) {
+            if (!precioStr) return 0;
+            let limpio = String(precioStr).replace(/[^0-9]/g, "");
+            return parseFloat(limpio) || 0;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
+            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
+            const contenedorUsuario = document.getElementById("contenedor-usuario-header");
+
+            if (contenedorUsuario) {
+                if (usuarioLimpio) {
+                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
+                    
+                    contenedorUsuario.innerHTML = `
+                        <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-user mr-1.5 sm:mr-2 text-[#7A1C32]"></i>
+                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${usuarioLogueadoOriginal}</span>
+                            <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                        </button>
+                        <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
+                            <div class="px-4 py-3 text-xs text-gray-500">
+                                Sesión iniciada como<br>
+                                <strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong>
+                            </div>
+                            ${esAdmin ? `
+                                <div class="py-1">
+                                    <a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-gears mr-2"></i> Panel Administrador
+                                    </a>
+                                </div>
+                            ` : `
+                                <div class="py-1">
+                                    <a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos
+                                    </a>
+                                </div>
+                            `}
+                            <div class="pt-1">
+                                <button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    contenedorUsuario.innerHTML = `
+                        <a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-user text-[#7A1C32] mr-1.5 sm:mr-2"></i> <span>Ingresar</span>
+                        </a>
+                    `;
+                }
+            }
+
+            if (!usuarioLimpio) {
+                alert("Debes iniciar sesión para ver tus pedidos.");
+                window.location.href = "login.html";
+                return;
+            }
+
+            const pedidos = JSON.parse(localStorage.getItem("glow_pedidos")) || [];
+            const misPedidos = pedidos.filter(p => p.usuario.toLowerCase().trim() === usuarioLimpio).reverse();
+
+            const contenedor = document.getElementById("lista-mis-pedidos");
+            const sinPedidos = document.getElementById("sin-pedidos");
+
+            const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            const cartCount = document.getElementById("cart-count");
+            if (cartCount) cartCount.textContent = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+
+            if (misPedidos.length === 0) {
+                sinPedidos.classList.remove("hidden");
+                return;
+            }
+
+            contenedor.innerHTML = misPedidos.map(pedido => {
+                let badgeColor = "bg-amber-100 text-amber-800";
+                if (pedido.estado && pedido.estado.includes("Confirmado")) badgeColor = "bg-blue-100 text-blue-800";
+                if (pedido.estado && (pedido.estado.includes("Enviado") || pedido.estado.includes("Guía"))) badgeColor = "bg-green-100 text-green-800";
+
+                const itemsArray = pedido.items || pedido.productos || [];
+
+                return `
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all">
+                        <!-- Línea Básica -->
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div class="flex items-center space-x-4">
+                                <span class="bg-[#7A1C32]/10 text-[#7A1C32] font-black px-3 py-1.5 rounded-xl text-sm">#${pedido.id}</span>
+                                <div>
+                                    <p class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1"></i> ${pedido.fecha || 'Fecha no registrada'}</p>
+                                    <p class="text-sm font-bold text-gray-900">Total: $${(pedido.total || 0).toLocaleString("es-CO")}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+                                <span class="px-3 py-1 rounded-full text-xs font-extrabold ${badgeColor}">
+                                    ${pedido.estado || 'Pendiente'}
+                                </span>
+                                <!-- Botón Ver con el Ojo -->
+                                <button onclick="toggleDetallePedido(${pedido.id})" class="bg-gray-100 hover:bg-[#7A1C32] hover:text-white text-gray-700 w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer shadow-xs" title="Ver detalles">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Información Detallada (Oculta por defecto) -->
+                        <div id="detalle-${pedido.id}" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-700 bg-gray-50 p-4 rounded-xl">
+                                <div>
+                                    <p><strong>Cliente:</strong> ${pedido.nombreCliente || 'No especificado'}</p>
+                                    <p><strong>Teléfono:</strong> ${pedido.telefonoCliente || 'No especificado'}</p>
+                                    <p><strong>Ubicación:</strong> ${pedido.ubicacion || 'No especificada'}</p>
+                                </div>
+                                <div>
+                                    <p><strong>Dirección:</strong> ${pedido.direccion || 'No especificada'}</p>
+                                    <p><strong>Espec. Vivienda:</strong> ${pedido.especificaciones || 'Ninguna'}</p>
+                                    <p><strong>Número de Guía de Envío:</strong> <span class="font-mono text-[#7A1C32] font-bold">${pedido.guia || 'Pendiente de asignar por el administrador'}</span></p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Productos del pedido:</p>
+                                <div class="space-y-2">
+                                    ${itemsArray.map(item => {
+                                        let pNum = convertirPrecioANumero(item.precio);
+                                        return `
+                                            <div class="text-xs text-gray-700 flex justify-between items-center bg-white p-2.5 rounded-lg border border-gray-100">
+                                                <div>
+                                                    <span class="font-bold text-[#7A1C32]">[${item.sku || 'N/A'}]</span> 
+                                                    <span>${item.nombre}</span> 
+                                                    <span class="text-gray-400">(x${item.cantidad})</span> </div> <span class="font-black">$${(pNum * item.cantidad).toLocaleString("es-CO")}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Botón Descargar PDF -->
+                            <div class="pt-2 flex justify-end">
+                                <button onclick='descargarPDFPedido(${JSON.stringify(pedido)})' class="bg-[#7A1C32] hover:bg-[#621628] text-white text-xs font-extrabold px-4 py-2.5 rounded-xl flex items-center shadow-md transition-all cursor-pointer">
+                                    <i class="fa-solid fa-file-pdf mr-2 text-sm"></i> Descargar Comprobante PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        });
+
+        window.toggleDetallePedido = function(id) {
+            const detalle = document.getElementById(`detalle-${id}`);
+            if (detalle) {
+                detalle.classList.toggle("hidden");
+            }
+        };
+
+        window.descargarPDFPedido = function(pedido) {
+            const itemsArray = pedido.items || pedido.productos || [];
+            
+            let htmlContenido = `
+                <div style="font-family: Arial, sans-serif; color: #333; padding: 25px; max-width: 700px; margin: auto; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #7A1C32; padding-bottom: 15px; margin-bottom: 20px;">
+                        <div>
+                            <h1 style="color: #7A1C32; margin: 0; font-size: 24px; font-weight: 900;">Glow & Go</h1>
+                            <p style="font-size: 11px; color: #666; margin: 3px 0;">Tu mundo, en un solo lugar.</p>
+                        </div>
+                        <div style="text-align: right; font-size: 11px; color: #555;">
+                            <p style="margin: 2px 0;"><strong>Fundadora:</strong> Zaidy Cano</p>
+                            <p style="margin: 2px 0;"><strong>Ubicación:</strong> El Socorro, Santander</p>
+                            <p style="margin: 2px 0;"><strong>Contacto:</strong> 3107027780</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="font-size: 16px; color: #7A1C32; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">COMPROBANTE DE PEDIDO #${pedido.id}</h2>
+                        <table style="width: 100%; font-size: 12px; margin-bottom: 10px;">
+                            <tr>
+                                <td style="padding: 4px 0;"><strong>Fecha:</strong> ${pedido.fecha}</td>
+                                <td style="padding: 4px 0;"><strong>Estado:</strong> ${pedido.estado}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 4px 0;"><strong>Cliente:</strong> ${pedido.nombreCliente}</td>
+                                <td style="padding: 4px 0;"><strong>Teléfono:</strong> ${pedido.telefonoCliente}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 4px 0;" colspan="2"><strong>Destino:</strong> ${pedido.ubicacion} - ${pedido.direccion}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 4px 0;" colspan="2"><strong>Guía de Envío:</strong> ${pedido.guia || 'Pendiente de asignar'}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 14px; color: #333; margin-bottom: 8px;">Detalle de Productos</h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                            <thead>
+                                <tr style="background-color: #7A1C32; color: white; text-align: left;">
+                                    <th style="padding: 8px;">SKU / Ref</th>
+                                    <th style="padding: 8px;">Producto</th>
+                                    <th style="padding: 8px; text-align: center;">Cant.</th>
+                                    <th style="padding: 8px; text-align: right;">P. Unitario</th>
+                                    <th style="padding: 8px; text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            itemsArray.forEach(item => {
+                let pUnitNum = convertirPrecioANumero(item.precio);
+                let totalItemNum = pUnitNum * item.cantidad;
+                htmlContenido += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 8px; font-weight: bold; color: #7A1C32;">${item.sku || 'N/A'}</td>
+                        <td style="padding: 8px;">${item.nombre}</td>
+                        <td style="padding: 8px; text-align: center;">${item.cantidad}</td>
+                        <td style="padding: 8px; text-align: right;">$${pUnitNum.toLocaleString("es-CO")}</td>
+                        <td style="padding: 8px; text-align: right; font-weight: bold;">$${totalItemNum.toLocaleString("es-CO")}</td>
+                    </tr>
+                `;
+            });
+
+            htmlContenido += `
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 15px; border-top: 2px solid #7A1C32; padding-top: 10px;">
+                        <span style="font-size: 16px; font-weight: 900; color: #7A1C32;">Total a Pagar (Productos): $${(pedido.total || 0).toLocaleString("es-CO")}</span>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 30px; font-size: 10px; color: #777; border-top: 1px solid #eee; padding-top: 10px;">
+                        <p>Gracias por comprar en Glow & Go — Tu mundo, en un solo lugar.</p>
+                        <p>El Socorro, Santander | WhatsApp: 3107027780</p>
+                    </div>
+                </div>
+            `;
+
+            const element = document.createElement("div");
+            element.innerHTML = htmlContenido;
+
+            const opt = {
+                margin:       10,
+                filename:     `Pedido_${pedido.id}_GlowAndGo.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(element).set(opt).save();
+        };
+    </script>
+</body>
+</html>
