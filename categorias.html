@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorías - Glow & Go</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Librería para generar el catálogo PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- ESTILOS CSS PERSONALIZADOS -->
+    <style>
+        :root {
+            --color-cereza: #7A1C32;
+            --color-cereza-oscuro: #621628;
+            --color-dorado: #D4AF37;
+        }
+
+        .barra-catalogo-estetica {
+            background: linear-gradient(135deg, #7A1C32 0%, #521221 100%);
+            border-top: 2px solid #D4AF37;
+            border-bottom: 2px solid #D4AF37;
+            box-shadow: 0 4px 20px rgba(122, 28, 50, 0.25);
+        }
+
+        header.sticky {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 9999 !important;
+            background-color: #ffffff !important;
+        }
+
+        body { padding-top: 96px; }
+        #modal-producto { z-index: 10000; }
+
+        /* Ventana de espera del generador PDF */
+        #estado-generacion-pdf {
+            position: fixed;
+            inset: 0;
+            z-index: 200000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(25, 10, 15, 0.72);
+            backdrop-filter: blur(5px);
+        }
+        #estado-generacion-pdf.visible { display: flex; }
+        .pdf-cargando-tarjeta {
+            width: 100%;
+            max-width: 360px;
+            padding: 32px 24px;
+            border-radius: 24px;
+            background: #fff;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        }
+        .pdf-spinner {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 18px;
+            border: 5px solid #f2dfe4;
+            border-top-color: #7A1C32;
+            border-radius: 50%;
+            animation: girar-pdf 0.8s linear infinite;
+        }
+        @keyframes girar-pdf { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+   <!-- ========================================== -->
+   <!-- HEADER / NAVEGACIÓN PRINCIPAL -->
+   <!-- ========================================== -->
+   <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
+       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
+           <div class="flex items-center space-x-3 flex-shrink-0">
+               <a href="index.html" class="flex items-center">
+                   <img src="logo_glow.jpg" alt="Glow & Go" class="h-14 sm:h-16 lg:h-20 w-auto object-contain">
+               </a>
+           </div>
+
+           <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
+               <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
+               <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
+               <div class="relative">
+                   <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-bold text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
+                       Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                   </button>
+                   <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
+               </div>
+           </nav>
+
+           <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-between lg:justify-end">
+               <div class="relative flex items-center flex-grow lg:w-64 xl:w-80">
+                   <div class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors px-3 py-1.5 sm:py-2.5 rounded-xl border border-gray-200 shadow-sm w-full">
+                       <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
+                       <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
+                   </div>
+                   <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
+               </div>
+               <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
+               <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
+                   <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2 text-white"></i> <span>Carrito</span>
+                   <span id="cart-count" class="ml-1.5 sm:ml-2 bg-white text-[#7A1C32] text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
+               </a>
+           </div>
+       </div>
+   </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-8 text-center relative overflow-hidden">
+            <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
+            <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
+            <h1 id="categoria-titulo" class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">Categoría: Seleccionada</h1>
+
+            <!-- NUEVO BOTÓN: GENERAR CATÁLOGO PDF -->
+            <button id="btn-generar-catalogo-pdf" type="button" onclick="generarCatalogoPDF()" class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-extrabold text-[#7A1C32] shadow-lg transition-all hover:bg-amber-50 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-wait">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>Generar catálogo PDF</span>
+            </button>
+        </div>
+
+        <div class="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-4 lg:gap-8">
+            <div class="lg:hidden bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black text-gray-900 mb-3 flex items-center">
+                    <i class="fa-solid fa-list mr-2 text-[#7A1C32]"></i> Cambiar Categoría
+                </h3>
+                <div id="lista-categorias-movil" class="flex items-center gap-2 overflow-x-auto pb-2"></div>
+            </div>
+
+            <aside class="hidden lg:block lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit sticky top-28 max-h-[80vh] overflow-y-auto">
+                <h3 class="text-lg font-black text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center">
+                    <i class="fa-solid fa-list mr-2 text-[#7A1C32]"></i> Categorías
+                </h3>
+                <div id="lista-categorias-lateral" class="space-y-2"></div>
+            </aside>
+
+            <div class="lg:col-span-3">
+                <section>
+                    <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="bg-white border-t border-gray-100 py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 w-auto mx-auto object-contain">
+            <p class="text-sm text-gray-500 font-medium">Glow & Go — Tu mundo, en un solo lugar.</p>
+            <div class="text-xs text-gray-600 font-semibold space-y-1">
+                <p>📍 Fundado en El Socorro, Santander</p>
+                <p>👩‍💼 Fundadora: Zaidy Cano</p>
+                <p>📞 Contacto personal: <a href="https://wa.me/573107027780?text=Hola,%20Zaidy,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="text-[#7A1C32] font-bold hover:underline">3107027780</a></p>
+            </div>
+            <p class="text-xs text-gray-400 pt-2">&copy; 2026 Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- BOTÓN WHATSAPP -->
+    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go%20y%20quiero%20más%20información" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <!-- VENTANA DE ESPERA DEL PDF -->
+    <div id="estado-generacion-pdf" role="status" aria-live="polite">
+        <div class="pdf-cargando-tarjeta">
+            <div class="pdf-spinner"></div>
+            <h2 id="texto-estado-pdf" class="text-xl font-black text-[#7A1C32] mb-2">Creando catálogo</h2>
+            <p class="text-sm text-gray-600">Por favor espere mientras organizamos las categorías, las imágenes y los precios.</p>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL EXISTENTE -->
+    <script src="js/app.js"></script>
+
+    <script>
+        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
+        const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
+
+        function toggleMenuUsuario() {
+            const dropdown = document.getElementById("dropdown-usuario");
+            if (dropdown) dropdown.classList.toggle("hidden");
+        }
+
+        function cerrarSesionUsuario() {
+            localStorage.removeItem("usuarioLogueado");
+            localStorage.removeItem("tokenUsuario");
+            window.location.reload();
+        }
+
+        window.addEventListener("click", function(e) {
+            const dropdownUsr = document.getElementById("dropdown-usuario");
+            const btnUsr = document.getElementById("btn-usuario-activo");
+            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
+                dropdownUsr.classList.add("hidden");
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
+            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
+            const contenedorUsuario = document.getElementById("contenedor-usuario-header");
+
+            if (contenedorUsuario) {
+                if (usuarioLimpio) {
+                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
+                    contenedorUsuario.innerHTML = `
+                        <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-user mr-1.5 sm:mr-2 text-[#7A1C32]"></i>
+                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${usuarioLogueadoOriginal}</span>
+                            <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                        </button>
+                        <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
+                            <div class="px-4 py-3 text-xs text-gray-500">Sesión iniciada como<br><strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong></div>
+                            ${esAdmin ? `
+                                <div class="py-1"><a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-gears mr-2"></i> Panel Administrador</a></div>
+                            ` : `
+                                <div class="py-1"><a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos</a></div>
+                            `}
+                            <div class="pt-1"><button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer"><i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión</button></div>
+                        </div>
+                    `;
+                } else {
+                    contenedorUsuario.innerHTML = `
+                        <a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-user text-[#7A1C32] mr-1.5 sm:mr-2"></i> <span>Ingresar</span>
+                        </a>
+                    `;
+                }
+            }
+
+            const verificarCarga = setInterval(() => {
+                if (typeof productosInventario !== 'undefined' && productosInventario.length > 0) {
+                    clearInterval(verificarCarga);
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const catParam = urlParams.get('cat');
+                    const catsEnCsvNorm = [...new Set(productosInventario.map(p => normalizarTexto(p.categoria)))];
+
+                    let categoriaActiva = catParam ? decodeURIComponent(catParam).toUpperCase() : '';
+                    if (!categoriaActiva && catsEnCsvNorm.length > 0) {
+                        const primeraProd = productosInventario.find(p => normalizarTexto(p.categoria) === catsEnCsvNorm[0]);
+                        categoriaActiva = primeraProd ? primeraProd.categoria.toUpperCase() : (typeof categoriasOficiales !== 'undefined' ? categoriasOficiales[0].nombre.toUpperCase() : '');
+                    }
+
+                    const lateralEl = document.getElementById('lista-categorias-lateral');
+                    const movilEl = document.getElementById('lista-categorias-movil');
+
+                    if (typeof categoriasOficiales !== 'undefined') {
+                        const htmlCategoriasPC = categoriasOficiales.map(cat => {
+                            const catNorm = normalizarTexto(cat.nombre);
+                            const disponible = catsEnCsvNorm.includes(catNorm);
+                            const activo = (normalizarTexto(categoriaActiva) === catNorm);
+
+                            if (disponible) {
+                                return `
+                                    <a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase transition-all ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
+                                        <span>${cat.nombre}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full ${activo ? 'bg-white text-[#7A1C32]' : 'bg-green-100 text-green-700'} font-extrabold">Disponible</span>
+                                    </a>
+                                `;
+                            } else {
+                                return `
+                                    <div class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase bg-gray-50 text-gray-400 opacity-60">
+                                        <span>${cat.nombre}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-extrabold">Próximamente</span>
+                                    </div>
+                                `;
+                            }
+                        }).join('');
+
+                        if (lateralEl) lateralEl.innerHTML = htmlCategoriasPC;
+
+                        if (movilEl) {
+                            movilEl.innerHTML = categoriasOficiales.map(cat => {
+                                const catNorm = normalizarTexto(cat.nombre);
+                                const disponible = catsEnCsvNorm.includes(catNorm);
+                                const activo = (normalizarTexto(categoriaActiva) === catNorm);
+
+                                if (disponible) {
+                                    return `
+                                        <a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" class="flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}">${cat.nombre}</a>
+                                    `;
+                                }
+                                return '';
+                            }).join('');
+                        }
+                    }
+
+                    const tituloEl = document.getElementById('categoria-titulo');
+                    if (tituloEl) tituloEl.textContent = `Categoría: ${categoriaActiva}`;
+
+                    const normTarget = normalizarTexto(categoriaActiva);
+                    const productosFiltrados = productosInventario.filter(p => normalizarTexto(p.categoria) === normTarget);
+
+                    if (typeof renderizarProductosGrilla === 'function') {
+                        renderizarProductosGrilla(productosFiltrados);
+                    }
+                }
+            }, 50);
+        });
+    </script>
+
+    <!-- GENERADOR PDF NUEVO. NO MODIFICA app.js NI LAS FUNCIONES EXISTENTES. -->
+    <script>
+    (function () {
+        "use strict";
+
+        const PDF_CEREZA = [122, 28, 50];
+        const PDF_DORADO = [212, 175, 55];
+
+        function normalizarCategoriaPDF(valor) {
+            if (typeof normalizarTexto === "function") return normalizarTexto(valor);
+            return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+        }
+
+        function cargarImagenComoDatosPDF(ruta) {
+            return new Promise(resolve => {
+                const imagen = new Image();
+                imagen.onload = function () {
+                    try {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = imagen.naturalWidth || imagen.width;
+                        canvas.height = imagen.naturalHeight || imagen.height;
+                        const contexto = canvas.getContext("2d");
+                        contexto.fillStyle = "#ffffff";
+                        contexto.fillRect(0, 0, canvas.width, canvas.height);
+                        contexto.drawImage(imagen, 0, 0);
+                        resolve({ datos: canvas.toDataURL("image/jpeg", 0.88), ancho: canvas.width, alto: canvas.height });
+                    } catch (error) {
+                        console.warn("No se pudo procesar la imagen del PDF:", ruta, error);
+                        resolve(null);
+                    }
+                };
+                imagen.onerror = () => resolve(null);
+                imagen.src = ruta;
+            });
+        }
+
+        async function buscarPortadaPDF(nombreBase) {
+            const extensiones = ["webp", "jpg", "jpeg", "png"];
+            const rutas = [];
+            extensiones.forEach(ext => {
+                rutas.push(nombreBase + "." + ext);
+                rutas.push("IMAGENES PRODUCTOS/" + nombreBase + "." + ext);
+                rutas.push("imagenes productos/" + nombreBase + "." + ext);
+            });
+            for (const ruta of rutas) {
+                const datos = await cargarImagenComoDatosPDF(ruta);
+                if (datos) return datos;
+            }
+            return null;
+        }
+
+        function dibujarImagenAjustada(doc, imagen, x, y, ancho, alto) {
+            if (!imagen || !imagen.datos) return;
+            const proporcion = Math.min(ancho / imagen.ancho, alto / imagen.alto);
+            const w = imagen.ancho * proporcion;
+            const h = imagen.alto * proporcion;
+            doc.addImage(imagen.datos, "JPEG", x + (ancho - w) / 2, y + (alto - h) / 2, w, h, undefined, "FAST");
+        }
+
+        function estadoPDF(mensaje) {
+            const texto = document.getElementById("texto-estado-pdf");
+            if (texto) texto.textContent = mensaje;
+        }
+
+        window.generarCatalogoPDF = async function () {
+            const boton = document.getElementById("btn-generar-catalogo-pdf");
+            const pantalla = document.getElementById("estado-generacion-pdf");
+            if (boton && boton.disabled) return;
+
+            if (typeof window.jspdf === "undefined") {
+                alert("No se pudo cargar la librería PDF. Verifica tu conexión a Internet e inténtalo de nuevo.");
+                return;
+            }
+
+            if (boton) boton.disabled = true;
+            if (pantalla) pantalla.classList.add("visible");
+
+            try {
+                estadoPDF("Preparando productos...");
+
+                if ((!Array.isArray(window.productosInventario) || productosInventario.length === 0) && typeof cargarProductosDesdeExcel === "function") {
+                    await cargarProductosDesdeExcel();
+                }
+
+                if (typeof productosInventario === "undefined" || !Array.isArray(productosInventario) || productosInventario.length === 0) {
+                    throw new Error("No se encontraron productos. Verifica que catalogo.csv esté cargado correctamente.");
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+                const W = 210, H = 297, margen = 12, anchoUtil = W - margen * 2;
+
+                // PORTADA
+                estadoPDF("Diseñando la portada...");
+                const portada = await buscarPortadaPDF("vistazo_inicial_glow");
+                doc.setFillColor(...PDF_CEREZA);
+                doc.rect(0, 0, W, H, "F");
+                doc.setDrawColor(...PDF_DORADO);
+                doc.setLineWidth(1.2);
+                doc.rect(7, 7, W - 14, H - 14);
+
+                if (portada) {
+                    dibujarImagenAjustada(doc, portada, 18, 25, W - 36, 195);
+                } else {
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(11);
+                    doc.text("Imagen de portada no encontrada", W / 2, 120, { align: "center" });
+                }
+
+                doc.setTextColor(255, 255, 255);
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(27);
+                doc.text("GLOW & GO", W / 2, 240, { align: "center" });
+                doc.setDrawColor(...PDF_DORADO);
+                doc.setLineWidth(0.8);
+                doc.line(40, 249, 170, 249);
+                doc.setFontSize(13);
+                doc.setFont("helvetica", "normal");
+                doc.text("CATÁLOGO DE PRODUCTOS", W / 2, 261, { align: "center" });
+                doc.setFontSize(9);
+                doc.text("Tu mundo, en un solo lugar.", W / 2, 270, { align: "center" });
+
+                // IMPORTANTE: la portada termina aquí. El catálogo empieza en la página 2.
+                // La portada se conserva exclusivamente en la primera página.
+                doc.addPage();
+
+                // AGRUPAR POR CATEGORÍAS OFICIALES Y CATEGORÍAS ADICIONALES DEL CSV
+                const grupos = new Map();
+                if (typeof categoriasOficiales !== "undefined") {
+                    categoriasOficiales.forEach(cat => grupos.set(normalizarCategoriaPDF(cat.nombre), { nombre: cat.nombre, productos: [] }));
+                }
+                productosInventario.forEach(producto => {
+                    const nombreCategoria = String(producto.categoria || "GENERAL").trim().toUpperCase();
+                    const clave = normalizarCategoriaPDF(nombreCategoria);
+                    if (!grupos.has(clave)) grupos.set(clave, { nombre: nombreCategoria, productos: [] });
+                    grupos.get(clave).productos.push(producto);
+                });
+                const categoriasConProductos = Array.from(grupos.values()).filter(g => g.productos.length > 0);
+
+                const columnas = 3;
+                const separacionX = 4;
+                const anchoTarjeta = (anchoUtil - separacionX * (columnas - 1)) / columnas;
+                const altoTarjeta = 67;
+                const altoImagen = 38;
+                const inicioY = 37;
+                const limiteInferior = 278;
+                let y = inicioY;
+                let columna = 0;
+                let categoriaActual = "";
+
+                function nuevaPaginaCatalogo() {
+                    doc.addPage();
+                    // Páginas interiores sobrias: fondo blanco, encabezado discreto y acento dorado.
+                    doc.setFillColor(255, 255, 255);
+                    doc.rect(0, 0, W, H, "F");
+                    doc.setTextColor(...PDF_CEREZA);
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(13);
+                    doc.text("GLOW & GO", margen, 14);
+                    doc.setTextColor(100, 90, 92);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    doc.text("CATÁLOGO DE PRODUCTOS", W - margen, 14, { align: "right" });
+                    doc.setDrawColor(...PDF_DORADO);
+                    doc.setLineWidth(0.7);
+                    doc.line(margen, 25, W - margen, 25);
+                    y = inicioY;
+                    columna = 0;
+                    categoriaActual = "";
+                }
+
+                function dibujarTituloCategoria(nombre) {
+                    if (y + 12 > limiteInferior) nuevaPaginaCatalogo();
+                    doc.setFillColor(...PDF_CEREZA);
+                    doc.roundedRect(margen, y, anchoUtil, 9, 2, 2, "F");
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(10);
+                    doc.text(String(nombre).toUpperCase().slice(0, 55), margen + 4, y + 6);
+                    y += 12;
+                    columna = 0;
+                    categoriaActual = nombre;
+                }
+
+                let totalProductos = 0;
+                for (const grupo of categoriasConProductos) {
+                    estadoPDF("Organizando " + grupo.nombre + "...");
+                    if (columna !== 0) {
+                        columna = 0;
+                        y += altoTarjeta + 4;
+                    }
+                    if (y + 12 > limiteInferior) nuevaPaginaCatalogo();
+                    dibujarTituloCategoria(grupo.nombre);
+
+                    for (const producto of grupo.productos) {
+                        if (y + altoTarjeta > limiteInferior) {
+                            nuevaPaginaCatalogo();
+                            dibujarTituloCategoria(grupo.nombre);
+                        }
+
+                        const x = margen + columna * (anchoTarjeta + separacionX);
+                        doc.setDrawColor(232, 224, 226);
+                        doc.setLineWidth(0.3);
+                        doc.roundedRect(x, y, anchoTarjeta, altoTarjeta, 2, 2, "S");
+
+                        let imagenProducto = null;
+                        const rutasImagen = Array.isArray(producto.imagenes) ? producto.imagenes : [];
+                        for (const ruta of rutasImagen) {
+                            if (!ruta) continue;
+                            imagenProducto = await cargarImagenComoDatosPDF(ruta);
+                            if (imagenProducto) break;
+                        }
+
+                        if (imagenProducto) {
+                            dibujarImagenAjustada(doc, imagenProducto, x + 3, y + 3, anchoTarjeta - 6, altoImagen);
+                        } else {
+                            doc.setFillColor(248, 246, 246);
+                            doc.rect(x + 3, y + 3, anchoTarjeta - 6, altoImagen, "F");
+                            doc.setTextColor(140, 130, 132);
+                            doc.setFont("helvetica", "normal");
+                            doc.setFontSize(6.5);
+                            doc.text("Imagen no disponible", x + anchoTarjeta / 2, y + 23, { align: "center" });
+                        }
+
+                        // ÚNICAMENTE NOMBRE Y PRECIO, ADEMÁS DE LA IMAGEN
+                        doc.setTextColor(45, 35, 38);
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(7.5);
+                        const nombreProducto = String(producto.nombre || "Sin nombre");
+                        const lineasNombre = doc.splitTextToSize(nombreProducto, anchoTarjeta - 6).slice(0, 2);
+                        const yNombre = y + altoImagen + 8;
+                        doc.text(lineasNombre, x + 3, yNombre);
+
+                        const yPrecio = yNombre + lineasNombre.length * 3.3 + 3;
+                        doc.setTextColor(...PDF_CEREZA);
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(9);
+                        doc.text(String(producto.precio || "Precio no disponible"), x + 3, yPrecio);
+
+                        columna++;
+                        totalProductos++;
+                        if (columna >= columnas) {
+                            columna = 0;
+                            y += altoTarjeta + 4;
+                        }
+                    }
+
+                    if (columna !== 0) {
+                        columna = 0;
+                        y += altoTarjeta + 4;
+                    }
+                    y += 2;
+                }
+
+                if (totalProductos === 0) throw new Error("No hay productos para incluir en el catálogo.");
+
+                estadoPDF("Finalizando y descargando PDF...");
+                const totalPaginas = doc.internal.getNumberOfPages();
+                for (let pagina = 2; pagina <= totalPaginas; pagina++) {
+                    doc.setPage(pagina);
+                    doc.setDrawColor(...PDF_DORADO);
+                    doc.setLineWidth(0.4);
+                    doc.line(margen, 285, W - margen, 285);
+                    doc.setTextColor(110, 110, 110);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    doc.text("Glow & Go", margen, 290);
+                    doc.text("Página " + (pagina - 1) + " de " + (totalPaginas - 1), W - margen, 290, { align: "right" });
+                }
+
+                doc.save("Catalogo_Glow_and_Go.pdf");
+                estadoPDF("¡Catálogo generado!");
+                await new Promise(resolve => setTimeout(resolve, 900));
+
+            } catch (error) {
+                console.error("Error al generar el catálogo PDF:", error);
+                alert("No se pudo generar el catálogo PDF.\n\n" + (error && error.message ? error.message : "Verifica el inventario y las imágenes."));
+            } finally {
+                if (pantalla) pantalla.classList.remove("visible");
+                if (boton) boton.disabled = false;
+            }
+        };
+    })();
+    </script>
+</body>
+</html>
