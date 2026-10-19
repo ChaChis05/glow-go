@@ -63,7 +63,7 @@
                 <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">
                     Catálogo
                 </a>
-                <!-- Menú desplegable de Categorías con posición inteligente para móviles -->
+                <!-- Menú desplegable de Categorías -->
                 <div class="relative">
                     <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] flex items-center py-1 cursor-pointer focus:outline-none whitespace-nowrap">
                         Categorías
@@ -79,18 +79,21 @@
             <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-between lg:justify-end">
 
                 <!-- BUSCADOR -->
-                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 sm:py-2 flex-grow lg:w-64 xl:w-80">
-                    <i class="fa-solid fa-magnifying-glass text-gray-400 mr-2 text-xs sm:text-sm"></i>
-                    <input id="buscador-productos"
-                           type="text"
-                           placeholder="Buscar..."
-                           class="bg-transparent text-xs sm:text-sm focus:outline-none w-full text-gray-700">
+                <div class="relative flex items-center flex-grow lg:w-64 xl:w-80">
+                    <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 sm:py-2.5 w-full">
+                        <i class="fa-solid fa-magnifying-glass text-gray-400 mr-2 text-xs sm:text-sm"></i>
+                        <input id="buscador-productos"
+                               type="text"
+                               placeholder="Buscar..."
+                               oninput="buscarProductosTiempoReal(this.value)"
+                               class="bg-transparent text-xs sm:text-sm focus:outline-none w-full text-gray-700">
+                    </div>
+                    <!-- Dropdown de resultados de búsqueda -->
+                    <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
                 </div>
 
                 <!-- 👤 USUARIO DINÁMICO -->
-                <div id="contenedor-usuario-header" class="relative flex-shrink-0">
-                    <!-- Se renderiza mediante JavaScript -->
-                </div>
+                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
 
                 <!-- CARRITO -->
                 <a href="carrito.html"
@@ -142,9 +145,7 @@
         </div>
 
         <div class="relative overflow-hidden w-full py-2">
-            <div id="cinta-productos" class="animate-cinta space-x-4 lg:space-x-6">
-                <!-- Se cargan dinámicamente -->
-            </div>
+            <div id="cinta-productos" class="animate-cinta space-x-4 lg:space-x-6"></div>
         </div>
     </section>
 
@@ -226,9 +227,7 @@
 
         function toggleMenuUsuario() {
             const dropdown = document.getElementById("dropdown-usuario");
-            if (dropdown) {
-                dropdown.classList.toggle("hidden");
-            }
+            if (dropdown) dropdown.classList.toggle("hidden");
         }
 
         function cerrarSesionUsuario() {
@@ -243,9 +242,52 @@
             if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
                 dropdownUsr.classList.add("hidden");
             }
+            // Cerrar buscador si se hace clic fuera
+            const dropdownBusqueda = document.getElementById("dropdown-busqueda");
+            const inputBuscador = document.getElementById("buscador-productos");
+            if (dropdownBusqueda && inputBuscador && !inputBuscador.contains(e.target) && !dropdownBusqueda.contains(e.target)) {
+                dropdownBusqueda.classList.add("hidden");
+            }
         });
 
-        // 👤 GESTIÓN DEL BOTÓN DE USUARIO DINÁMICO EN EL HEADER
+        // 🔍 FUNCIÓN DE BÚSQUEDA EN TIEMPO REAL
+        window.buscarProductosTiempoReal = function(texto) {
+            const dropdown = document.getElementById("dropdown-busqueda");
+            if (!dropdown) return;
+            const query = texto.toLowerCase().trim();
+
+            if (!query || query.length < 2) {
+                dropdown.classList.add("hidden");
+                dropdown.innerHTML = "";
+                return;
+            }
+
+            const resultados = productosCargados.filter(p => 
+                (p.nombre && p.nombre.toLowerCase().includes(query)) ||
+                (p.categoria && p.categoria.toLowerCase().includes(query)) ||
+                (p.sku && p.sku.toLowerCase().includes(query))
+            ).slice(0, 6);
+
+            if (resultados.length === 0) {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>`;
+                dropdown.classList.remove("hidden");
+                return;
+            }
+
+            dropdown.innerHTML = resultados.map(p => `
+                <div onclick="window.location.href='catalogo.html?buscar=${encodeURIComponent(p.nombre)}'" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                    <img src="${p.imagen}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
+                    <div class="flex-grow min-w-0">
+                        <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
+                        <span class="text-[10px] text-[#7A1C32] font-semibold">${p.precio}</span>
+                    </div>
+                </div>
+            `).join('');
+            dropdown.classList.remove("hidden");
+        };
+
+        let productosCargados = [];
+
         document.addEventListener("DOMContentLoaded", async () => {
             const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
             const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
@@ -254,7 +296,6 @@
             if (contenedorUsuario) {
                 if (usuarioLimpio) {
                     const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
-                    
                     contenedorUsuario.innerHTML = `
                         <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm whitespace-nowrap">
                             <i class="fa-solid fa-user mr-1.5 sm:mr-2 text-[#7A1C32]"></i>
@@ -262,28 +303,13 @@
                             <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                         </button>
                         <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
-                            <div class="px-4 py-3 text-xs text-gray-500">
-                                Sesión iniciada como<br>
-                                <strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong>
-                            </div>
+                            <div class="px-4 py-3 text-xs text-gray-500">Sesión iniciada como<br><strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong></div>
                             ${esAdmin ? `
-                                <div class="py-1">
-                                    <a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors">
-                                        <i class="fa-solid fa-gears mr-2"></i> Panel Administrador
-                                    </a>
-                                </div>
+                                <div class="py-1"><a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-gears mr-2"></i> Panel Administrador</a></div>
                             ` : `
-                                <div class="py-1">
-                                    <a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors">
-                                        <i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos
-                                    </a>
-                                </div>
+                                <div class="py-1"><a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos</a></div>
                             `}
-                            <div class="pt-1">
-                                <button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer">
-                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión
-                                </button>
-                            </div>
+                            <div class="pt-1"><button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer"><i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión</button></div>
                         </div>
                     `;
                 } else {
@@ -301,18 +327,13 @@
 
         function actualizarContadorCarrito() {
             let carrito = [];
-            try {
-                carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-            } catch (error) {
-                carrito = [];
-            }
+            try { carrito = JSON.parse(localStorage.getItem("carrito")) || []; } catch (e) { carrito = []; }
             const totalItems = carrito.reduce((sum, item) => sum + (Number(item.cantidad) || 0), 0);
             const cartCount = document.getElementById("cart-count");
             if (cartCount) cartCount.textContent = totalItems;
         }
 
         const ARCHIVO_CSV = "catalogo.csv";
-        let productosCargados = [];
 
         async function cargarCintaDirectaCSV() {
             const contenedor = document.getElementById("cinta-productos");
@@ -344,14 +365,9 @@
                     if (!nombre) return null;
 
                     const categoria = obtenerCampo(fila, ["categoría", "categoria", "seccion", "tipo"]);
-
                     let precio = obtenerCampo(fila, ["precio", "valor", "pvp"]);
-                    if (typeof precio === "number") {
-                        precio = "$" + precio.toLocaleString("es-CO");
-                    } else {
-                        let precioNum = Number(String(precio).replace(/[^0-9]/g, '')) || 0;
-                        precio = "$" + precioNum.toLocaleString("es-CO");
-                    }
+                    let precioNum = Number(String(precio).replace(/[^0-9]/g, '')) || 0;
+                    precio = "$" + precioNum.toLocaleString("es-CO");
 
                     const descripcion = obtenerCampo(fila, ["especificaciones", "descripcion", "detalle", "caracteristicas"]);
                     const sku = obtenerCampo(fila, ["referencia / sku", "sku", "codigo", "referencia", "id"]);
@@ -367,13 +383,13 @@
                         categoria: String(categoria).trim(),
                         descripcion: String(descripcion || "Producto disponible en Glow & Go.").trim(),
                         precio: precio || "$0",
+                        precioNum: precioNum,
                         imagen: listaImagenes[0],
                         imagenes: listaImagenes,
                         cantidad: 1
                     };
                 }).filter(Boolean);
 
-                // 🌟 FILTRO ESTRICTO POR REFERENCIA / SKU (Unifica productos repetidos en distintas categorías)
                 const mapaUnicos = new Map();
                 productosCrudos.forEach(prod => {
                     if (prod.sku && !mapaUnicos.has(prod.sku)) {
