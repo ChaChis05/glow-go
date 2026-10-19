@@ -114,14 +114,14 @@
    </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8">
-        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-8 text-center relative overflow-hidden">
+        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden shadow-md">
             <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
             <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
-            <h1 id="categoria-titulo" class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">Categoría: Seleccionada</h1>
+            <h1 id="categoria-titulo" class="text-xl md:text-3xl font-black text-white tracking-wide uppercase text-center sm:text-left">Categoría: Seleccionada</h1>
 
-            <!-- NUEVO BOTÓN: GENERAR CATÁLOGO PDF -->
-            <button id="btn-generar-catalogo-pdf" type="button" onclick="generarCatalogoPDF()" class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-extrabold text-[#7A1C32] shadow-lg transition-all hover:bg-amber-50 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-wait">
-                <i class="fa-solid fa-file-pdf"></i>
+            <!-- BOTÓN: GENERAR CATÁLOGO PDF -->
+            <button id="btn-generar-catalogo-pdf" type="button" onclick="generarCatalogoPDF()" class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 font-black text-[#7A1C32] shadow-lg transition-all hover:bg-amber-500 hover:scale-[1.02] disabled:opacity-65 disabled:cursor-wait flex-shrink-0 relative z-20">
+                <i class="fa-solid fa-file-pdf text-base"></i>
                 <span>Generar catálogo PDF</span>
             </button>
         </div>
@@ -201,7 +201,54 @@
             if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
                 dropdownUsr.classList.add("hidden");
             }
+            const dropdownBusqueda = document.getElementById("dropdown-busqueda");
+            const inputBuscador = document.getElementById("input-buscador");
+            if (dropdownBusqueda && inputBuscador && !inputBuscador.contains(e.target) && !dropdownBusqueda.contains(e.target)) {
+                dropdownBusqueda.classList.add("hidden");
+            }
         });
+
+        // 🔍 FUNCIÓN DE BÚSQUEDA EN TIEMPO REAL
+        window.buscarProductosTiempoReal = function(texto) {
+            const dropdown = document.getElementById("dropdown-busqueda");
+            if (!dropdown) return;
+            const query = texto.toLowerCase().trim();
+
+            if (!query || query.length < 2) {
+                dropdown.classList.add("hidden");
+                dropdown.innerHTML = "";
+                return;
+            }
+
+            if (typeof productosInventario === "undefined" || !productosInventario.length) {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">Cargando inventario...</div>`;
+                dropdown.classList.remove("hidden");
+                return;
+            }
+
+            const resultados = productosInventario.filter(p => 
+                (p.nombre && p.nombre.toLowerCase().includes(query)) ||
+                (p.categoria && p.categoria.toLowerCase().includes(query)) ||
+                (p.sku && p.sku.toLowerCase().includes(query))
+            ).slice(0, 6);
+
+            if (resultados.length === 0) {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>`;
+                dropdown.classList.remove("hidden");
+                return;
+            }
+
+            dropdown.innerHTML = resultados.map(p => `
+                <div onclick="window.location.href='categorias.html?cat=${encodeURIComponent(p.categoria)}'" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                    <img src="${p.imagenes && p.imagenes[0] ? p.imagenes[0] : 'logo_glow.jpg'}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
+                    <div class="flex-grow min-w-0">
+                        <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
+                        <span class="text-[10px] text-[#7A1C32] font-semibold">${p.precioStr || '$0'}</span>
+                    </div>
+                </div>
+            `).join('');
+            dropdown.classList.remove("hidden");
+        };
 
         document.addEventListener("DOMContentLoaded", () => {
             const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
@@ -308,7 +355,7 @@
         });
     </script>
 
-    <!-- GENERADOR PDF NUEVO. NO MODIFICA app.js NI LAS FUNCIONES EXISTENTES. -->
+    <!-- GENERADOR PDF -->
     <script>
     (function () {
         "use strict";
@@ -335,7 +382,6 @@
                         contexto.drawImage(imagen, 0, 0);
                         resolve({ datos: canvas.toDataURL("image/jpeg", 0.88), ancho: canvas.width, alto: canvas.height });
                     } catch (error) {
-                        console.warn("No se pudo procesar la imagen del PDF:", ruta, error);
                         resolve(null);
                     }
                 };
@@ -378,7 +424,7 @@
             if (boton && boton.disabled) return;
 
             if (typeof window.jspdf === "undefined") {
-                alert("No se pudo cargar la librería PDF. Verifica tu conexión a Internet e inténtalo de nuevo.");
+                alert("No se pudo cargar la librería PDF.");
                 return;
             }
 
@@ -387,20 +433,10 @@
 
             try {
                 estadoPDF("Preparando productos...");
-
-                if ((!Array.isArray(window.productosInventario) || productosInventario.length === 0) && typeof cargarProductosDesdeExcel === "function") {
-                    await cargarProductosDesdeExcel();
-                }
-
-                if (typeof productosInventario === "undefined" || !Array.isArray(productosInventario) || productosInventario.length === 0) {
-                    throw new Error("No se encontraron productos. Verifica que catalogo.csv esté cargado correctamente.");
-                }
-
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
                 const W = 210, H = 297, margen = 12, anchoUtil = W - margen * 2;
 
-                // PORTADA
                 estadoPDF("Diseñando la portada...");
                 const portada = await buscarPortadaPDF("vistazo_inicial_glow");
                 doc.setFillColor(...PDF_CEREZA);
@@ -409,14 +445,7 @@
                 doc.setLineWidth(1.2);
                 doc.rect(7, 7, W - 14, H - 14);
 
-                if (portada) {
-                    dibujarImagenAjustada(doc, portada, 18, 25, W - 36, 195);
-                } else {
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(11);
-                    doc.text("Imagen de portada no encontrada", W / 2, 120, { align: "center" });
-                }
+                if (portada) dibujarImagenAjustada(doc, portada, 18, 25, W - 36, 195);
 
                 doc.setTextColor(255, 255, 255);
                 doc.setFont("helvetica", "bold");
@@ -431,11 +460,8 @@
                 doc.setFontSize(9);
                 doc.text("Tu mundo, en un solo lugar.", W / 2, 270, { align: "center" });
 
-                // IMPORTANTE: la portada termina aquí. El catálogo empieza en la página 2.
-                // La portada se conserva exclusivamente en la primera página.
                 doc.addPage();
 
-                // AGRUPAR POR CATEGORÍAS OFICIALES Y CATEGORÍAS ADICIONALES DEL CSV
                 const grupos = new Map();
                 if (typeof categoriasOficiales !== "undefined") {
                     categoriasOficiales.forEach(cat => grupos.set(normalizarCategoriaPDF(cat.nombre), { nombre: cat.nombre, productos: [] }));
@@ -457,11 +483,9 @@
                 const limiteInferior = 278;
                 let y = inicioY;
                 let columna = 0;
-                let categoriaActual = "";
 
                 function nuevaPaginaCatalogo() {
                     doc.addPage();
-                    // Páginas interiores sobrias: fondo blanco, encabezado discreto y acento dorado.
                     doc.setFillColor(255, 255, 255);
                     doc.rect(0, 0, W, H, "F");
                     doc.setTextColor(...PDF_CEREZA);
@@ -477,7 +501,6 @@
                     doc.line(margen, 25, W - margen, 25);
                     y = inicioY;
                     columna = 0;
-                    categoriaActual = "";
                 }
 
                 function dibujarTituloCategoria(nombre) {
@@ -490,16 +513,12 @@
                     doc.text(String(nombre).toUpperCase().slice(0, 55), margen + 4, y + 6);
                     y += 12;
                     columna = 0;
-                    categoriaActual = nombre;
                 }
 
                 let totalProductos = 0;
                 for (const grupo of categoriasConProductos) {
                     estadoPDF("Organizando " + grupo.nombre + "...");
-                    if (columna !== 0) {
-                        columna = 0;
-                        y += altoTarjeta + 4;
-                    }
+                    if (columna !== 0) { columna = 0; y += altoTarjeta + 4; }
                     if (y + 12 > limiteInferior) nuevaPaginaCatalogo();
                     dibujarTituloCategoria(grupo.nombre);
 
@@ -527,13 +546,8 @@
                         } else {
                             doc.setFillColor(248, 246, 246);
                             doc.rect(x + 3, y + 3, anchoTarjeta - 6, altoImagen, "F");
-                            doc.setTextColor(140, 130, 132);
-                            doc.setFont("helvetica", "normal");
-                            doc.setFontSize(6.5);
-                            doc.text("Imagen no disponible", x + anchoTarjeta / 2, y + 23, { align: "center" });
                         }
 
-                        // ÚNICAMENTE NOMBRE Y PRECIO, ADEMÁS DE LA IMAGEN
                         doc.setTextColor(45, 35, 38);
                         doc.setFont("helvetica", "bold");
                         doc.setFontSize(7.5);
@@ -546,24 +560,15 @@
                         doc.setTextColor(...PDF_CEREZA);
                         doc.setFont("helvetica", "bold");
                         doc.setFontSize(9);
-                        doc.text(String(producto.precio || "Precio no disponible"), x + 3, yPrecio);
+                        doc.text(String(producto.precioStr || producto.precio || "Precio no disponible"), x + 3, yPrecio);
 
                         columna++;
                         totalProductos++;
-                        if (columna >= columnas) {
-                            columna = 0;
-                            y += altoTarjeta + 4;
-                        }
+                        if (columna >= columnas) { columna = 0; y += altoTarjeta + 4; }
                     }
-
-                    if (columna !== 0) {
-                        columna = 0;
-                        y += altoTarjeta + 4;
-                    }
+                    if (columna !== 0) { columna = 0; y += altoTarjeta + 4; }
                     y += 2;
                 }
-
-                if (totalProductos === 0) throw new Error("No hay productos para incluir en el catálogo.");
 
                 estadoPDF("Finalizando y descargando PDF...");
                 const totalPaginas = doc.internal.getNumberOfPages();
@@ -582,10 +587,8 @@
                 doc.save("Catalogo_Glow_and_Go.pdf");
                 estadoPDF("¡Catálogo generado!");
                 await new Promise(resolve => setTimeout(resolve, 900));
-
             } catch (error) {
-                console.error("Error al generar el catálogo PDF:", error);
-                alert("No se pudo generar el catálogo PDF.\n\n" + (error && error.message ? error.message : "Verifica el inventario y las imágenes."));
+                alert("No se pudo generar el catálogo PDF.");
             } finally {
                 if (pantalla) pantalla.classList.remove("visible");
                 if (boton) boton.disabled = false;
