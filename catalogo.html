@@ -16,17 +16,6 @@
             --color-dorado: #D4AF37;
         }
 
-        .bg-indigo-600 { background-color: var(--color-cereza) !important; }
-        .bg-indigo-600:hover { background-color: var(--color-cereza-oscuro) !important; }
-        .hover\:bg-indigo-700:hover { background-color: var(--color-cereza-oscuro) !important; }
-        .text-indigo-600 { color: var(--color-cereza) !important; }
-        .hover\:text-indigo-600:hover { color: var(--color-cereza) !important; }
-        .bg-indigo-50 { background-color: rgba(122, 28, 50, 0.08) !important; }
-        .hover\:bg-indigo-100:hover { background-color: rgba(122, 28, 50, 0.15) !important; }
-        .text-indigo-700 { color: var(--color-cereza) !important; }
-        .text-indigo-800 { color: var(--color-cereza) !important; }
-        .shadow-indigo-200 { box-shadow: 0 10px 15px -3px rgba(122, 28, 50, 0.2) !important; }
-
         .barra-catalogo-estetica {
             background: linear-gradient(135deg, #7A1C32 0%, #521221 100%);
             border-top: 2px solid #D4AF37;
@@ -72,14 +61,12 @@
                 <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
                 <a href="catalogo.html" class="text-xs sm:text-sm font-bold text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
             
-                <!-- Menú desplegable de Categorías con posición inteligente para móviles -->
+                <!-- Menú desplegable de Categorías -->
                 <div class="relative">
                     <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
                         Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                     </button>
-                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50">
-                        <!-- Se llena dinámicamente con JS -->
-                    </div>
+                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
                 </div>
             </nav>
 
@@ -156,9 +143,7 @@
 
         function toggleMenuUsuario() {
             const dropdown = document.getElementById("dropdown-usuario");
-            if (dropdown) {
-                dropdown.classList.toggle("hidden");
-            }
+            if (dropdown) dropdown.classList.toggle("hidden");
         }
 
         function cerrarSesionUsuario() {
@@ -173,7 +158,48 @@
             if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
                 dropdownUsr.classList.add("hidden");
             }
+            const dropdownBusqueda = document.getElementById("dropdown-busqueda");
+            const inputBuscador = document.getElementById("input-buscador");
+            if (dropdownBusqueda && inputBuscador && !inputBuscador.contains(e.target) && !dropdownBusqueda.contains(e.target)) {
+                dropdownBusqueda.classList.add("hidden");
+            }
         });
+
+        // 🔍 FUNCIÓN DE BÚSQUEDA EN TIEMPO REAL
+        window.buscarProductosTiempoReal = function(texto) {
+            const dropdown = document.getElementById("dropdown-busqueda");
+            if (!dropdown) return;
+            const query = texto.toLowerCase().trim();
+
+            if (!query || query.length < 2) {
+                dropdown.classList.add("hidden");
+                dropdown.innerHTML = "";
+                return;
+            }
+
+            const resultados = listaProductosGlobal.filter(p => 
+                (p.nombre && p.nombre.toLowerCase().includes(query)) ||
+                (p.categoria && p.categoria.toLowerCase().includes(query)) ||
+                (p.sku && p.sku.toLowerCase().includes(query))
+            ).slice(0, 6);
+
+            if (resultados.length === 0) {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>`;
+                dropdown.classList.remove("hidden");
+                return;
+            }
+
+            dropdown.innerHTML = resultados.map(p => `
+                <div onclick="abrirModalProducto(${p.id}); document.getElementById('dropdown-busqueda').classList.add('hidden');" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                    <img src="${p.imagenes[0]}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
+                    <div class="flex-grow min-w-0">
+                        <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
+                        <span class="text-[10px] text-[#7A1C32] font-semibold">${p.precioStr}</span>
+                    </div>
+                </div>
+            `).join('');
+            dropdown.classList.remove("hidden");
+        };
 
         let listaProductosGlobal = [];
 
@@ -276,7 +302,6 @@
                         };
                     });
 
-                    // 🌟 FILTRO ESTRICTO POR SKU / REFERENCIA EN EL CATÁLOGO (Evita duplicados si está en varias categorías)
                     const mapaUnicos = new Map();
                     productosMapeados.forEach((prod, idx) => {
                         const claveSku = prod.sku ? prod.sku.toLowerCase() : ("prod-" + idx);
@@ -287,7 +312,6 @@
 
                     listaProductosGlobal = Array.from(mapaUnicos.values());
 
-                    // Renderizar productos únicos en el grid completo
                     const grid = document.getElementById('catalog-full-grid');
                     if (grid && listaProductosGlobal.length > 0) {
                         grid.innerHTML = listaProductosGlobal.map(p => {
@@ -312,9 +336,6 @@
                 .catch(err => console.error("Error al cargar el CSV del catálogo:", err));
         });
 
-        // ==========================================
-        // 🛒 FUNCIONES DE CARRITO Y MODAL (SIN ALERTAS MOLESTAS)
-        // ==========================================
         window.agregarAlCarritoPorId = function(id) {
             const prod = listaProductosGlobal.find(p => p.id === id);
             if (!prod) return;
@@ -342,9 +363,7 @@
 
         function actualizarContadorCarritoHeader() {
             let carrito = [];
-            try {
-                carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-            } catch (e) { carrito = []; }
+            try { carrito = JSON.parse(localStorage.getItem("carrito")) || []; } catch (e) { carrito = []; }
             const totalItems = carrito.reduce((sum, item) => sum + (Number(item.cantidad) || 0), 0);
             const badge = document.getElementById("cart-count");
             if (badge) badge.textContent = totalItems;
