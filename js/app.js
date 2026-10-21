@@ -380,7 +380,7 @@ window.buscarProductosTiempoReal = function(texto) {
         const precioProd = p.precio || p.precioStr || '$0';
 
         return `
-            <div onclick="seleccionarProductoBusqueda(${p.id}, '${p.categoria || ''}')" class="flex items-center gap-3 p-2.5 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+            <div onclick="seleccionarProductoBusqueda(${p.id})" class="flex items-center gap-3 p-2.5 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
                 <img src="${imagenProd}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
                 <div class="flex-grow min-w-0">
                     <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
@@ -392,19 +392,19 @@ window.buscarProductosTiempoReal = function(texto) {
     dropdown.classList.remove("hidden");
 };
 
-window.seleccionarProductoBusqueda = function(idProducto, categoria) {
+// ==========================================
+// 9. APERTURA DIRECTA DE VENTANA EMERGENTE (MODAL) GLOBAL
+// ==========================================
+window.seleccionarProductoBusqueda = function(idProducto) {
     const dropdown = document.getElementById("dropdown-busqueda");
     if (dropdown) dropdown.classList.add("hidden");
 
-    // Si estamos en la página del catálogo, abrimos el modal directamente
-    if (typeof abrirModalProducto === "function" && document.getElementById("catalog-full-grid")) {
+    // Llama directamente a la función encargada de abrir el modal en cualquier página
+    if (typeof abrirModalProducto === "function") {
         abrirModalProducto(idProducto);
-        return;
+    } else {
+        console.error("La función abrirModalProducto no está definida en esta página.");
     }
-
-    // Si estamos en Index o Categorías, redirigimos a catalogo.html pasando el ID del producto
-    // para que la página de catálogo reciba la orden y abra su ventana emergente de forma automática.
-    window.location.href = `catalogo.html?modal=${idProducto}`;
 };
 
 window.addEventListener("click", function(e) {
