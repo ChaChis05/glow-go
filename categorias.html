@@ -11,7 +11,7 @@
     <!-- Librería para generar el catálogo PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- ESTILOS CSS PERSONALIZADOS Y BLINDAJE DE MODAL Y BUSCADOR -->
+    <!-- ESTILOS CSS PERSONALIZADOS -->
     <style>
         :root {
             --color-cereza: #7A1C32;
@@ -37,26 +37,12 @@
 
         body { padding-top: 96px; }
 
-        /* 🛡️ BLINDAJE ABSOLUTO PARA EL MODAL DE DETALLE Y LA X DE CIERRE */
+        /* 🛡️ BLINDAJE TOTAL PARA QUE EL MODAL Y LA X FUNCIONEN SIEMPRE */
         #modal-producto {
-            z-index: 100000 !important;
-            display: none;
-            position: fixed !important;
-            inset: 0 !important;
-            background: rgba(0, 0, 0, 0.6) !important;
-            backdrop-filter: blur(4px);
-            align-items: center !important;
-            justify-content: center !important;
-            padding: 16px !important;
-            overflow-y: auto !important;
+            z-index: 9999999 !important;
         }
         #modal-producto:not(.hidden) {
             display: flex !important;
-        }
-
-        /* 🔍 ASEGURAR VISIBILIDAD DEL BUSCADOR */
-        #dropdown-busqueda {
-            z-index: 999999 !important;
         }
 
         /* Ventana de espera del generador PDF */
@@ -123,8 +109,8 @@
                        <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
                        <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
                    </div>
-                   <!-- 🔍 CONTENEDOR DE RESULTADOS DE BÚSQUEDA FLOTANTE -->
-                   <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
+                   <!-- 🔍 CONTENEDOR DE BÚSQUEDA FLOTANTE CORREGIDO -->
+                   <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[999999] p-2 divide-y divide-gray-50"></div>
                </div>
                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
                <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
@@ -199,10 +185,10 @@
         </div>
     </div>
 
-    <!-- 📌 MODAL / VENTANA DETALLE DE PRODUCTO (CON X DE CIERRE FUNCIONAL) -->
-    <div id="modal-producto" class="hidden">
+    <!-- 📌 MODAL / VENTANA DETALLE DE PRODUCTO -->
+    <div id="modal-producto" class="hidden fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
         <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full overflow-hidden relative animate-in fade-in zoom-in duration-200 my-8">
-            <button type="button" onclick="cerrarModalProducto()" class="absolute top-5 right-5 bg-gray-100 hover:bg-gray-200 text-gray-700 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl transition-colors z-[99999] shadow-md cursor-pointer">
+            <button type="button" id="btn-cerrar-modal-emergente" class="absolute top-5 right-5 bg-gray-100 hover:bg-gray-200 text-gray-700 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl transition-colors z-[999999] shadow-md cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
@@ -252,6 +238,19 @@
             localStorage.removeItem("tokenUsuario");
             window.location.reload();
         }
+
+        // 🛡️ ENLAZAR EL BOTÓN DE CIERRE (X) DE FORMA DIRECTA Y BLINDADA
+        document.addEventListener("DOMContentLoaded", () => {
+            const btnCerrar = document.getElementById("btn-cerrar-modal-emergente");
+            if (btnCerrar) {
+                btnCerrar.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const modal = document.getElementById("modal-producto");
+                    if (modal) modal.classList.add("hidden");
+                });
+            }
+        });
 
         window.addEventListener("click", function(e) {
             const dropdownUsr = document.getElementById("dropdown-usuario");
