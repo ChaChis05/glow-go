@@ -11,7 +11,7 @@
     <!-- Librería para generar el catálogo PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- ESTILOS CSS PERSONALIZADOS -->
+    <!-- ESTILOS CSS PERSONALIZADOS Y BLINDAJE DE MODAL -->
     <style>
         :root {
             --color-cereza: #7A1C32;
@@ -36,16 +36,61 @@
         }
 
         body { padding-top: 96px; }
-        #modal-detalle { z-index: 10000; }
+
+        /* ========================================== */
+        /* 🛡️ BLINDAJE ABSOLUTO PARA EL MODAL DE DETALLE */
+        /* ========================================== */
+        #modal-detalle {
+            z-index: 999999 !important;
+            display: none;
+            position: fixed !important;
+            inset: 0 !important;
+            background: rgba(0, 0, 0, 0.65) !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 16px !important;
+        }
+        #modal-detalle:not(.hidden) {
+            display: flex !important;
+        }
+        #modal-detalle > div {
+            background: #ffffff !important;
+            width: 100% !important;
+            max-width: 750px !important;
+            border-radius: 24px !important;
+            padding: 32px !important;
+            position: relative !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
+        }
+        #modal-contenido {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+        }
+        @media (min-width: 768px) {
+            #modal-contenido {
+                grid-template-columns: 1fr 1fr !important;
+            }
+        }
 
         /* Estilo para el zoom de la imagen en el modal */
         .zoom-container {
             position: relative;
             overflow: hidden;
             cursor: zoom-in;
+            background-color: #f9fafb;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 280px;
         }
         .zoom-container img {
             transition: transform 0.2s ease;
+            max-height: 100%;
+            object-fit: contain;
         }
 
         /* Ventana de espera del generador PDF */
@@ -162,12 +207,12 @@
     <!-- ========================================== -->
     <!-- 📌 VENTANA EMERGENTE (MODAL DE DETALLE) -->
     <!-- ========================================== -->
-    <div id="modal-detalle" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[10000]">
-        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 lg:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button onclick="cerrarModalDetalle()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer">
+    <div id="modal-detalle" class="hidden">
+        <div>
+            <button onclick="cerrarModalDetalle()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer z-10">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <div id="modal-contenido" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+            <div id="modal-contenido"></div>
         </div>
     </div>
 
