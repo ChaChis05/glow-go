@@ -11,7 +11,7 @@
     <!-- Librería para generar el catálogo PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- ESTILOS CSS PERSONALIZADOS Y BLINDAJE DE MODAL -->
+    <!-- ESTILOS CSS PERSONALIZADOS Y BLINDAJE DE MODAL Y BUSCADOR -->
     <style>
         :root {
             --color-cereza: #7A1C32;
@@ -37,9 +37,7 @@
 
         body { padding-top: 96px; }
 
-        /* ========================================== */
-        /* 🛡️ BLINDAJE ABSOLUTO PARA EL MODAL DE DETALLE */
-        /* ========================================== */
+        /* 🛡️ BLINDAJE ABSOLUTO PARA EL MODAL DE DETALLE Y LA X DE CIERRE */
         #modal-producto {
             z-index: 100000 !important;
             display: none;
@@ -54,6 +52,11 @@
         }
         #modal-producto:not(.hidden) {
             display: flex !important;
+        }
+
+        /* 🔍 ASEGURAR VISIBILIDAD DEL BUSCADOR */
+        #dropdown-busqueda {
+            z-index: 999999 !important;
         }
 
         /* Ventana de espera del generador PDF */
@@ -120,6 +123,7 @@
                        <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
                        <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
                    </div>
+                   <!-- 🔍 CONTENEDOR DE RESULTADOS DE BÚSQUEDA FLOTANTE -->
                    <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
                </div>
                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
@@ -175,14 +179,14 @@
             <div class="text-xs text-gray-600 font-semibold space-y-1">
                 <p>📍 Fundado en El Socorro, Santander</p>
                 <p>👩‍💼 Fundadora: Zaidy Cano</p>
-                <p>📞 Contacto personal: <a href="https://wa.me/573134237663?text=Hola,%20Zaidy,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="text-[#7A1C32] font-bold hover:underline">3134237663</a></p>
+                <p>📞 Contacto personal: <a href="https://wa.me/573107027780?text=Hola,%20Zaidy,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="text-[#7A1C32] font-bold hover:underline">3107027780</a></p>
             </div>
             <p class="text-xs text-gray-400 pt-2">&copy; 2026 Todos los derechos reservados.</p>
         </div>
     </footer>
 
     <!-- BOTÓN WHATSAPP -->
-    <a href="https://wa.me/573134237663?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go%20y%20quiero%20más%20información" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go%20y%20quiero%20más%20información" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
 
@@ -195,10 +199,10 @@
         </div>
     </div>
 
-    <!-- 📌 MODAL / VENTANA DETALLE DE PRODUCTO -->
+    <!-- 📌 MODAL / VENTANA DETALLE DE PRODUCTO (CON X DE CIERRE FUNCIONAL) -->
     <div id="modal-producto" class="hidden">
         <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full overflow-hidden relative animate-in fade-in zoom-in duration-200 my-8">
-            <button onclick="cerrarModalProducto()" class="absolute top-5 right-5 bg-gray-100 hover:bg-gray-200 text-gray-700 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl transition-colors z-10 shadow-sm cursor-pointer">
+            <button type="button" onclick="cerrarModalProducto()" class="absolute top-5 right-5 bg-gray-100 hover:bg-gray-200 text-gray-700 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl transition-colors z-[99999] shadow-md cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
@@ -262,7 +266,7 @@
             }
         });
 
-        // 🔍 BÚSQUEDA INTELIGENTE EN TIEMPO REAL
+        // 🔍 BÚSQUEDA INTELIGENTE EN TIEMPO REAL PARA CATEGORÍAS
         window.buscarProductosTiempoReal = function(texto) {
             const dropdown = document.getElementById("dropdown-busqueda");
             if (!dropdown) return;
