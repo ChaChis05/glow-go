@@ -377,7 +377,8 @@ window.buscarProductosTiempoReal = function(texto) {
 
     dropdown.innerHTML = resultados.map(p => {
         const imagenProd = (p.imagenes && p.imagenes[0]) ? p.imagenes[0] : 'logo_glow.jpg';
-        const precioProd = p.precioStr || p.precio || '$0';
+        // Aquí corregimos para que lea correctamente el precio con formato
+        const precioProd = p.precio || p.precioStr || '$0';
 
         return `
             <div onclick="seleccionarProductoBusqueda(${p.id}, '${p.categoria || ''}')" class="flex items-center gap-3 p-2.5 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
@@ -396,11 +397,13 @@ window.seleccionarProductoBusqueda = function(idProducto, categoria) {
     const dropdown = document.getElementById("dropdown-busqueda");
     if (dropdown) dropdown.classList.add("hidden");
 
-    if (typeof abrirModalProducto === "function") {
+    // Si la página actual tiene la función de abrir modal (como catalogo.html), la ejecuta
+    if (typeof abrirModalProducto === "function" && document.getElementById("catalog-full-grid")) {
         abrirModalProducto(idProducto);
         return;
     }
 
+    // Si estamos en categorias.html o index.html, redirige directamente a la categoría del producto seleccionado
     if (categoria) {
         window.location.href = `categorias.html?cat=${encodeURIComponent(categoria)}`;
     } else {
