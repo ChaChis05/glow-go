@@ -38,6 +38,16 @@
         body { padding-top: 96px; }
         #modal-detalle { z-index: 10000; }
 
+        /* Estilo para el zoom de la imagen en el modal */
+        .zoom-container {
+            position: relative;
+            overflow: hidden;
+            cursor: zoom-in;
+        }
+        .zoom-container img {
+            transition: transform 0.2s ease;
+        }
+
         /* Ventana de espera del generador PDF */
         #estado-generacion-pdf {
             position: fixed;
@@ -102,7 +112,7 @@
                         <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
                         <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
                     </div>
-                    <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
+                    <div id="dropdown-busqueda" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
                 </div>
                 <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
                 <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
@@ -150,7 +160,7 @@
     </main>
 
     <!-- ========================================== -->
-    <!-- 📌 MODAL DE DETALLE OFICIAL (CON ZOOM INTEGRADO POR JS) -->
+    <!-- 📌 VENTANA EMERGENTE (MODAL DE DETALLE) -->
     <!-- ========================================== -->
     <div id="modal-detalle" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[10000]">
         <div class="bg-white rounded-3xl max-w-3xl w-full p-6 lg:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -261,7 +271,7 @@
             }
 
             dropdown.innerHTML = resultados.map(p => {
-                const indexReal = productosInventario.findIndex(item => item.sku === p.sku || item.nombre === p.nombre);
+                const indexReal = productosInventario.findIndex(item => (item.sku && item.sku === p.sku) || item.nombre === p.nombre);
                 const imgProd = p.imagenes && p.imagenes[0] ? p.imagenes[0] : 'logo_glow.jpg';
                 return `
                     <div onclick="seleccionarProductoDesdeBusquedaCategorias(${indexReal})" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
