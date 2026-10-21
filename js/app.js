@@ -92,6 +92,8 @@ async function cargarProductosDesdeExcel() {
                 sku: fila["Referencia / SKU"] ? String(fila["Referencia / SKU"]).trim() : `SKU-${index + 1}`,
                 descripcion: fila["Especificaciones"] ? String(fila["Especificaciones"]).trim() : "Sin especificaciones.",
                 precio: `$${precioNumerico.toLocaleString("es-CO")}`,
+                precioStr: `$${precioNumerico.toLocaleString("es-CO")}`,
+                precioNum: precioNumerico,
                 imagenes: arrayRutas
             };
         });
@@ -300,6 +302,14 @@ window.abrirModalProducto = function(idProducto) {
 
     if (imgPrincipal && prod.imagenes && prod.imagenes.length > 0) {
         imgPrincipal.src = prod.imagenes[0];
+        
+        if (contenedorMiniaturas) {
+            contenedorMiniaturas.innerHTML = prod.imagenes.map((img, idx) => `
+                <button onclick="document.getElementById('modal-img').src='${img}'" class="w-16 h-16 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 p-1 flex-shrink-0 cursor-pointer hover:border-[#7A1C32]">
+                    <img src="${img}" class="w-full h-full object-contain">
+                </button>
+            `).join('');
+        }
     }
 
     if (document.getElementById("modal-sku")) document.getElementById("modal-sku").textContent = prod.sku;
@@ -308,11 +318,100 @@ window.abrirModalProducto = function(idProducto) {
     if (document.getElementById("modal-descripcion")) document.getElementById("modal-descripcion").textContent = prod.descripcion;
     if (document.getElementById("modal-precio")) document.getElementById("modal-precio").textContent = prod.precio;
 
-    const modal = document.getElementById("modal-producto");
+    const btnAgregarModal = document.getElementById("modal-btn-agregar") || document.getElementById("btn-agregar-carrito-modal");
+    if (btnAgregarModal) {
+        btnAgregarModal.onclick = function() {
+            agregarAlCarrito(prod.id);
+            if (typeof cerrarModalProducto === "function") cerrarModalProducto();
+        };
+    }
+
+    const modal = document.getElementById("modal-producto") || document.getElementById("modal-detalle");
     if (modal) modal.classList.remove("hidden");
 };
 
-window.cerrarModalProducto = function() {
-    const modal = document.getElementById("modal-producto");
-    if (modal) modal.classList.add("hidden");
+// ==========================================
+// 8. BÚSQUEDA INTELIGENTE EN TIEMPO REAL
+// ==========================================
+window.buscarProductosTiempoReal = function(texto) {
+    const dropdown = document.getElementById("dropdown-busqueda");
+    if (!dropdown) return;
+    
+    const query = texto.toLowerCase().trim();
+
+    if (!query || query.length < 2) {
+        dropdown.classList.add("hidden");
+        dropdown.innerHTML = "";
+        return;
+    }
+
+    if (productosInventario.length === 0) {
+        dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">Cargando inventario...</div>`;
+        dropdown.classList.remove("hidden");
+        return;
+    }
+
+    const palabrasBusqueda = query.split(/\s+/).filter(Boolean);
+
+    const resultados = productosInventario.filter(p => {
+        const nombreLower = (p.nombre || "").toLowerCase();
+        const categoriaLower = (p.categoria || "").toLowerCase();
+        const skuLower = (p.sku || "").toLowerCase();
+
+        const palabrasNombre = nombreLower.split(/\s+/);
+
+        return palabrasBusqueda.every(palabraQuery => {
+            const coincideNombre = palabrasNombre.some(pNombre => pNombre.startsWith(palabraQuery));
+            const coincideCategoria = categoriaLower.startsWith(palabraQuery);
+            const coincideSku = skuLower.startsWith(palabraQuery);
+
+            return coincideNombre || coincideCategoria || coincideSku;
+        });
+    }).slice(0, 6);
+
+    if (resultados.length === 0) {
+        dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>`;
+        dropdown.classList.remove("hidden");
+        return;
+    }
+
+    dropdown.innerHTML = resultados.map(p => {
+        const imagenProd = (p.imagenes && p.imagenes[0]) ? p.imagenes[0] : 'logo_glow.jpg';
+        const precioProd = p.precioStr || p.precio || '$0';
+
+        return `
+            <div onclick="seleccionarProductoBusqueda(${p.id}, '${p.categoria || ''}')" class="flex items-center gap-3 p-2.5 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                <img src="${imagenProd}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
+                <div class="flex-grow min-w-0">
+                    <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
+                    <span class="text-[10px] text-[#7A1C32] font-semibold">${precioProd}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    dropdown.classList.remove("hidden");
 };
+
+window.seleccionarProductoBusqueda = function(idProducto, categoria) {
+    const dropdown = document.getElementById("dropdown-busqueda");
+    if (dropdown) dropdown.classList.add("hidden");
+
+    if (typeof abrirModalProducto === "function") {
+        abrirModalProducto(idProducto);
+        return;
+    }
+
+    if (categoria) {
+        window.location.href = `categorias.html?cat=${encodeURIComponent(categoria)}`;
+    } else {
+        window.location.href = `catalogo.html`;
+    }
+};
+
+window.addEventListener("click", function(e) {
+    const dropdownBusqueda = document.getElementById("dropdown-busqueda");
+    const inputBuscador = document.getElementById("input-buscador") || document.getElementById("buscador-productos");
+    if (dropdownBusqueda && inputBuscador && !inputBuscador.contains(e.target) && !dropdownBusqueda.contains(e.target)) {
+        dropdownBusqueda.classList.add("hidden");
+    }
+});
