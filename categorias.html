@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="icon" type="image/png" href="./favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categorías - Glow & Go</title>
@@ -37,7 +36,7 @@
         }
 
         body { padding-top: 96px; }
-        #modal-producto { z-index: 10000; }
+        #modal-detalle { z-index: 10000; }
 
         /* Ventana de espera del generador PDF */
         #estado-generacion-pdf {
@@ -150,6 +149,18 @@
         </div>
     </main>
 
+    <!-- ========================================== -->
+    <!-- 📌 MODAL DE DETALLE OFICIAL (CON ZOOM INTEGRADO POR JS) -->
+    <!-- ========================================== -->
+    <div id="modal-detalle" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[10000]">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 lg:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="cerrarModalDetalle()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modal-contenido" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+        </div>
+    </div>
+
     <!-- PIE DE PÁGINA -->
     <footer class="bg-white border-t border-gray-100 py-12 mt-16">
         <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
@@ -209,7 +220,7 @@
             }
         });
 
-        // 🔍 NUEVA FUNCIÓN DE BÚSQUEDA INTELIGENTE EN TIEMPO REAL (FRAGMENTOS AL INICIO DE CADA PALABRA)
+        // 🔍 BÚSQUEDA INTELIGENTE EN TIEMPO REAL (ABRE EL MODAL OFICIAL USANDO EL ÍNDICE DEL INVENTARIO)
         window.buscarProductosTiempoReal = function(texto) {
             const dropdown = document.getElementById("dropdown-busqueda");
             if (!dropdown) return;
@@ -249,16 +260,29 @@
                 return;
             }
 
-            dropdown.innerHTML = resultados.map(p => `
-                <div onclick="window.location.href='categorias.html?cat=${encodeURIComponent(p.categoria)}'" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
-                    <img src="${p.imagenes && p.imagenes[0] ? p.imagenes[0] : 'logo_glow.jpg'}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
-                    <div class="flex-grow min-w-0">
-                        <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
-                        <span class="text-[10px] text-[#7A1C32] font-semibold">${p.precioStr || '$0'}</span>
+            dropdown.innerHTML = resultados.map(p => {
+                const indexReal = productosInventario.findIndex(item => item.sku === p.sku || item.nombre === p.nombre);
+                const imgProd = p.imagenes && p.imagenes[0] ? p.imagenes[0] : 'logo_glow.jpg';
+                return `
+                    <div onclick="seleccionarProductoDesdeBusquedaCategorias(${indexReal})" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                        <img src="${imgProd}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
+                        <div class="flex-grow min-w-0">
+                            <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
+                            <span class="text-[10px] text-[#7A1C32] font-semibold">${p.precioStr || '$0'}</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             dropdown.classList.remove("hidden");
+        };
+
+        window.seleccionarProductoDesdeBusquedaCategorias = function(indiceReal) {
+            const dropdown = document.getElementById("dropdown-busqueda");
+            if (dropdown) dropdown.classList.add("hidden");
+            
+            if (indiceReal !== -1 && typeof abrirDetalleProducto === "function") {
+                abrirDetalleProducto(indiceReal);
+            }
         };
 
         document.addEventListener("DOMContentLoaded", () => {
