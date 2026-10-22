@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <link rel="icon" type="image/png" href="./favicon.png">
@@ -460,7 +460,7 @@
         });
 
         /* ---------- Categorías ---------- */
-        let categorias = [];      // [{ key, nombre, disponible }]
+        let categorias = [];
         let categoriaActivaKey = "";
 
         function construirCategorias() {
@@ -474,7 +474,6 @@
                     mapa.set(key, { key, nombre: c.nombre, disponible: keysCsv.has(key) });
                 });
             }
-            // Categorías del inventario que no estén en la lista oficial: también disponibles
             productosInventario.forEach(p => {
                 const key = normCat(p.categoria);
                 if (!key || mapa.has(key)) return;
@@ -527,7 +526,6 @@
             if (lat) lat.innerHTML = htmlLateral();
             if (mov) mov.innerHTML = htmlMovil();
             if (hdr) hdr.innerHTML = htmlHeader();
-            // Mantener visible la categoría activa en la barra móvil
             const act = mov && mov.querySelector(".bg-\\[\\#7A1C32\\]");
             if (act && act.scrollIntoView) act.scrollIntoView({ inline: "center", block: "nearest" });
         }
@@ -604,7 +602,6 @@
             setTimeout(aplicar, 180);
         }
 
-        // Cambio de categoría sin recargar la página (sin parpadeo)
         document.addEventListener("click", e => {
             const enlace = e.target.closest("a.enlace-cat");
             if (!enlace) return;
@@ -628,7 +625,6 @@
 
         /* ---------- Inicio ---------- */
         document.addEventListener("DOMContentLoaded", () => {
-            // Usuario
             const original = localStorage.getItem("usuarioLogueado") || "";
             const limpio = original.toLowerCase().trim();
             const contUsr = document.getElementById("contenedor-usuario-header");
@@ -660,7 +656,6 @@
 
             refrescarContadorCarrito();
 
-            // Esperar el inventario (máx. ~15 s)
             let intentos = 0;
             const espera = setInterval(() => {
                 intentos++;
@@ -928,4 +923,3 @@
     </script>
 </body>
 </html>
-
