@@ -283,12 +283,19 @@
             catch (e) { return []; }
         }
         function refrescarContadorCarrito() {
-            const total = leerCarrito().reduce((s, i) => s + (parseInt(i.cantidad, 10) || 1), 0);
-            const el = document.getElementById("cart-count");
-            if (el) el.textContent = total;
-            if (typeof actualizarContadorCarrito === "function") {
-                try { actualizarContadorCarrito(); } catch (e) {}
-            }
+            const guardado = leerCarrito();
+            const total = guardado.reduce((s, i) => s + (parseInt(i.cantidad, 10) || 1), 0);
+
+            // Mantener sincronizada la variable "carrito" de app.js (si existe)
+            try {
+                if (typeof carrito !== "undefined" && Array.isArray(carrito)) {
+                    carrito.length = 0;
+                    guardado.forEach(i => carrito.push(i));
+                }
+            } catch (e) {}
+
+            // Se pinta el valor real directamente (sin depender de la función de app.js)
+            document.querySelectorAll("#cart-count").forEach(el => { el.textContent = total; });
         }
         let toastTimer;
         function mostrarAviso(msg) {
@@ -460,7 +467,7 @@
         });
 
         /* ---------- Categorías ---------- */
-        let categorias = [];
+        let categorias = [];      // [{ key, nombre, disponible }]
         let categoriaActivaKey = "";
 
         function construirCategorias() {
@@ -474,6 +481,7 @@
                     mapa.set(key, { key, nombre: c.nombre, disponible: keysCsv.has(key) });
                 });
             }
+            // Categorías del inventario que no estén en la lista oficial: también disponibles
             productosInventario.forEach(p => {
                 const key = normCat(p.categoria);
                 if (!key || mapa.has(key)) return;
@@ -526,6 +534,7 @@
             if (lat) lat.innerHTML = htmlLateral();
             if (mov) mov.innerHTML = htmlMovil();
             if (hdr) hdr.innerHTML = htmlHeader();
+            // Mantener visible la categoría activa en la barra móvil
             const act = mov && mov.querySelector(".bg-\\[\\#7A1C32\\]");
             if (act && act.scrollIntoView) act.scrollIntoView({ inline: "center", block: "nearest" });
         }
@@ -602,6 +611,7 @@
             setTimeout(aplicar, 180);
         }
 
+        // Cambio de categoría sin recargar la página (sin parpadeo)
         document.addEventListener("click", e => {
             const enlace = e.target.closest("a.enlace-cat");
             if (!enlace) return;
@@ -625,6 +635,7 @@
 
         /* ---------- Inicio ---------- */
         document.addEventListener("DOMContentLoaded", () => {
+            // Usuario
             const original = localStorage.getItem("usuarioLogueado") || "";
             const limpio = original.toLowerCase().trim();
             const contUsr = document.getElementById("contenedor-usuario-header");
@@ -656,6 +667,7 @@
 
             refrescarContadorCarrito();
 
+            // Esperar el inventario (máx. ~15 s)
             let intentos = 0;
             const espera = setInterval(() => {
                 intentos++;
@@ -923,3 +935,4 @@
     </script>
 </body>
 </html>
+
