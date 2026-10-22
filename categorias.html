@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
     <link rel="icon" type="image/png" href="./favicon.png">
@@ -115,7 +115,7 @@
                        <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
                        <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
                    </div>
-                   <!-- 🔍 CONTENEDOR DE BÚSQUEDA FLOTANTE IDÉNTICO AL INDEX -->
+                   <!-- 🔍 CONTENEDOR DE BÚSQUEDA FLOTANTE -->
                    <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[999999] p-2 divide-y divide-gray-50"></div>
                </div>
                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
@@ -157,7 +157,7 @@
 
             <div class="lg:col-span-3">
                 <section>
-                    <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+                    <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 transition-opacity duration-300"></div>
                 </section>
             </div>
         </div>
@@ -232,7 +232,7 @@
             }
         });
 
-        // 🔍 BÚSQUEDA INTELIGENTE EN TIEMPO REAL IDÉNTICA AL INDEX (ABRE MODAL DIRECTAMENTE)
+        // 🔍 BÚSQUEDA INTELIGENTE EN TIEMPO REAL IDÉNTICA AL INDEX
         window.buscarProductosTiempoReal = function(texto) {
             const dropdown = document.getElementById("dropdown-busqueda");
             if (!dropdown) return;
@@ -356,27 +356,7 @@
 
                 document.getElementById("btn-agregar-carrito-directo").addEventListener("click", () => {
                     const cantidad = Math.max(1, parseInt(document.getElementById("cantidad-producto").value, 10) || 1);
-                    if (typeof agregarAlCarrito === "function") {
-                        agregarAlCarrito(producto, cantidad);
-                    } else {
-                        let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-                        const existente = carrito.find(item => item.sku === producto.sku || item.nombre === producto.nombre);
-                        if (existente) {
-                            existente.cantidad += cantidad;
-                        } else {
-                            carrito.push({
-                                sku: producto.sku,
-                                nombre: producto.nombre,
-                                precio: producto.precioStr || producto.precio,
-                                precioNum: producto.precioNum,
-                                imagenes: producto.imagenes,
-                                cantidad: cantidad
-                            });
-                        }
-                        localStorage.setItem("carrito", JSON.stringify(carrito));
-                        if (typeof actualizarContadorCarrito === "function") actualizarContadorCarrito();
-                        cerrarModalDetalle();
-                    }
+                    agregarAlCarritoGlobal(producto, cantidad);
                 });
             }
 
@@ -392,6 +372,38 @@
 
         window.cerrarModalDetalle = function() {
             document.getElementById("modal-detalle").classList.add("hidden");
+        };
+
+        // FUNCIÓN UNIVERSAL PARA AGREGAR AL CARRITO
+        window.agregarAlCarritoGlobal = function(producto, cantidad = 1) {
+            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            const clave = String(producto.id ?? producto.sku ?? producto.nombre);
+            const existente = carrito.find(item => String(item.id ?? item.sku ?? item.nombre) === clave);
+
+            if (existente) {
+                existente.cantidad += cantidad;
+            } else {
+                carrito.push({
+                    id: producto.id || producto.sku,
+                    sku: producto.sku,
+                    nombre: producto.nombre,
+                    precio: producto.precioStr || producto.precio,
+                    precioNum: producto.precioNum || Number(String(producto.precioStr || producto.precio || "0").replace(/[^0-9]/g, '')) || 0,
+                    imagenes: producto.imagenes || [producto.imagen || 'logo_glow.jpg'],
+                    cantidad: cantidad
+                });
+            }
+
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            if (typeof actualizarContadorCarrito === "function") {
+                actualizarContadorCarrito();
+            } else {
+                const badge = document.getElementById("cart-count");
+                if (badge) {
+                    badge.textContent = carrito.reduce((sum, item) => sum + (Number(item.cantidad) || 0), 0);
+                }
+            }
+            cerrarModalDetalle();
         };
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -433,66 +445,55 @@
 
                     const urlParams = new URLSearchParams(window.location.search);
                     const catParam = urlParams.get('cat');
-                    const catsEnCsvNorm = [...new Set(productosInventario.map(p => normalizarTexto(p.categoria)))];
+                    
+                    // OBTENER TODAS LAS CATEGORÍAS ÚNICAS EXISTENTES EN EL CSV (SIN DEPENDER DE LISTAS ESTÁTICAS LIMITADAS)
+                    const categoriasEnInventario = [...new Set(productosInventario.map(p => String(p.categoria || "").trim()))].filter(Boolean);
 
-                    let categoriaActiva = catParam ? decodeURIComponent(catParam).toUpperCase() : '';
-                    if (!categoriaActiva && catsEnCsvNorm.length > 0) {
-                        const primeraProd = productosInventario.find(p => normalizarTexto(p.categoria) === catsEnCsvNorm[0]);
-                        categoriaActiva = primeraProd ? primeraProd.categoria.toUpperCase() : (typeof categoriasOficiales !== 'undefined' ? categoriasOficiales[0].nombre.toUpperCase() : '');
+                    let categoriaActiva = catParam ? decodeURIComponent(catParam).trim() : '';
+                    if (!categoriaActiva && categoriasEnInventario.length > 0) {
+                        categoriaActiva = categoriasEnInventario[0];
                     }
 
                     const lateralEl = document.getElementById('lista-categorias-lateral');
                     const movilEl = document.getElementById('lista-categorias-movil');
 
-                    if (typeof categoriasOficiales !== 'undefined') {
-                        const htmlCategoriasPC = categoriasOficiales.map(cat => {
-                            const catNorm = normalizarTexto(cat.nombre);
-                            const disponible = catsEnCsvNorm.includes(catNorm);
-                            const activo = (normalizarTexto(categoriaActiva) === catNorm);
-
-                            if (disponible) {
+                    // CONSTRUIR EL MENÚ CON TODAS LAS CATEGORÍAS DISPONIBLES EN EL CSV
+                    const generarHTMLCategorias = (esMovil = false) => {
+                        return categoriasEnInventario.map(catNombre => {
+                            const activo = normalizarTexto(catNombre) === normalizarTexto(categoriaActiva);
+                            if (esMovil) {
                                 return `
-                                    <a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase transition-all ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
-                                        <span>${cat.nombre}</span>
-                                        <span class="text-xs px-2 py-0.5 rounded-full ${activo ? 'bg-white text-[#7A1C32]' : 'bg-green-100 text-green-700'} font-extrabold">Disponible</span>
-                                    </a>
+                                    <a href="categorias.html?cat=${encodeURIComponent(catNombre)}" class="flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}">${catNombre}</a>
                                 `;
                             } else {
                                 return `
-                                    <div class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase bg-gray-50 text-gray-400 opacity-60">
-                                        <span>${cat.nombre}</span>
-                                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-extrabold">Próximamente</span>
-                                    </div>
+                                    <a href="categorias.html?cat=${encodeURIComponent(catNombre)}" class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase transition-all ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
+                                        <span>${catNombre}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full ${activo ? 'bg-white text-[#7A1C32]' : 'bg-green-100 text-green-700'} font-extrabold">Disponible</span>
+                                    </a>
                                 `;
                             }
                         }).join('');
+                    };
 
-                        if (lateralEl) lateralEl.innerHTML = htmlCategoriasPC;
-
-                        if (movilEl) {
-                            movilEl.innerHTML = categoriasOficiales.map(cat => {
-                                const catNorm = normalizarTexto(cat.nombre);
-                                const disponible = catsEnCsvNorm.includes(catNorm);
-                                const activo = (normalizarTexto(categoriaActiva) === catNorm);
-
-                                if (disponible) {
-                                    return `
-                                        <a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" class="flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}">${cat.nombre}</a>
-                                    `;
-                                }
-                                return '';
-                            }).join('');
-                        }
-                    }
+                    if (lateralEl) lateralEl.innerHTML = generarHTMLCategorias(false);
+                    if (movilEl) movilEl.innerHTML = generarHTMLCategorias(true);
 
                     const tituloEl = document.getElementById('categoria-titulo');
                     if (tituloEl) tituloEl.textContent = `Categoría: ${categoriaActiva}`;
 
-                    const normTarget = normalizarTexto(categoriaActiva);
-                    const productosFiltrados = productosInventario.filter(p => normalizarTexto(p.categoria) === normTarget);
+                    const gridContainer = document.getElementById('catalog-full-grid');
+                    if (gridContainer) {
+                        gridContainer.style.opacity = '0';
+                        setTimeout(() => {
+                            const normTarget = normalizarTexto(categoriaActiva);
+                            const productosFiltrados = productosInventario.filter(p => normalizarTexto(p.categoria) === normTarget);
 
-                    if (typeof renderizarProductosGrilla === 'function') {
-                        renderizarProductosGrilla(productosFiltrados);
+                            if (typeof renderizarProductosGrilla === 'function') {
+                                renderizarProductosGrilla(productosFiltrados);
+                            }
+                            gridContainer.style.opacity = '1';
+                        }, 150);
                     }
                 }
             }, 50);
