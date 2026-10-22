@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <link rel="icon" type="image/png" href="./favicon.png">
@@ -18,17 +18,19 @@
             z-index: 9999 !important;
             background-color: #ffffff !important;
         }
+        body { padding-top: 96px; }
 
-        body {
-            padding-top: 96px;
+        /* Campo con error */
+        .campo-invalido {
+            border-color: #f87171 !important;
+            background-color: #fef2f2;
         }
+        .req { color: #dc2626; font-weight: 800; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
-    
-    <!-- ========================================== -->
-    <!-- 📌 HEADER -->
-    <!-- ========================================== -->
+
+    <!-- HEADER -->
     <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
             <div class="flex items-center space-x-3 flex-shrink-0">
@@ -37,28 +39,23 @@
                 </a>
             </div>
 
-            <!-- Navegación central con menú desplegable adaptado -->
             <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
                 <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
                 <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
-                
+
                 <div class="relative">
                     <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
                         Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                     </button>
-                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50">
-                        <!-- Se llena dinámicamente con JS -->
-                    </div>
+                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
                 </div>
             </nav>
 
             <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-between lg:justify-end">
-                <!-- USUARIO DINÁMICO -->
                 <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
 
-                <!-- Botón de Carrito -->
                 <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-xs flex-shrink-0 whitespace-nowrap">
-                    <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2"></i> <span>Carrito</span> 
+                    <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2"></i> <span>Carrito</span>
                     <span id="cart-count" class="ml-1.5 sm:ml-2 bg-white text-[#7A1C32] text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
                 </a>
             </div>
@@ -81,81 +78,75 @@
         </div>
 
         <div id="contenedor-carrito-lleno" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Listado de Productos y Formulario de Envío (Izquierda) -->
             <div class="lg:col-span-2 space-y-6">
-                
-                <!-- Listado de ítems -->
-                <div class="space-y-4" id="lista-items-carrito">
-                    <!-- Se llena dinámicamente -->
-                </div>
+
+                <div class="space-y-4" id="lista-items-carrito"></div>
 
                 <!-- Formulario de Dirección y Datos de Envío -->
                 <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 border-b border-gray-100 pb-4 gap-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-2 border-b border-gray-100 pb-4 gap-4">
                         <h2 class="text-xl font-bold text-gray-900 flex items-center">
                             <i class="fa-solid fa-location-dot text-[#7A1C32] mr-2.5"></i> Dirección de Envío y Datos
                         </h2>
-                        <!-- Botón de guardar información para pedidos futuros -->
                         <label class="flex items-center space-x-2 bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none">
                             <input type="checkbox" id="check-guardar-datos" class="w-4 h-4 accent-[#7A1C32] rounded cursor-pointer">
                             <span>Guardar información para envíos futuros</span>
                         </label>
                     </div>
-                    
-                    <!-- Mensaje de error personalizado en rojo -->
+                    <p class="text-xs text-gray-500 mb-5"><span class="req">*</span> Campos obligatorios. El código postal y las observaciones son opcionales.</p>
+
                     <div id="mensaje-error-carrito" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center"></div>
 
-                    <form id="form-envio" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form id="form-envio" novalidate onsubmit="return false;" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Nombre completo</label>
-                            <input type="text" id="envio-nombre" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            <label for="envio-nombre" class="block text-xs font-bold text-gray-700 mb-1">Nombre completo <span class="req">*</span></label>
+                            <input type="text" id="envio-nombre" autocomplete="name" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Correo electrónico</label>
-                            <input type="email" id="envio-correo" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            <label for="envio-correo" class="block text-xs font-bold text-gray-700 mb-1">Correo electrónico <span class="req">*</span></label>
+                            <input type="email" id="envio-correo" autocomplete="email" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Número de teléfono / celular</label>
-                            <input type="tel" id="envio-telefono" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            <label for="envio-telefono" class="block text-xs font-bold text-gray-700 mb-1">Número de teléfono / celular <span class="req">*</span></label>
+                            <input type="tel" id="envio-telefono" inputmode="tel" autocomplete="tel" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Departamento</label>
-                            <select id="envio-depto" onchange="cargarMunicipiosDesdeCSV()" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32] bg-white cursor-pointer">
+                            <label for="envio-depto" class="block text-xs font-bold text-gray-700 mb-1">Departamento <span class="req">*</span></label>
+                            <select id="envio-depto" onchange="cargarMunicipiosDesdeCSV()" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32] bg-white cursor-pointer">
                                 <option value="">Cargando departamentos...</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Ciudad / Municipio</label>
-                            <select id="envio-ciudad" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32] bg-white cursor-pointer">
+                            <label for="envio-ciudad" class="block text-xs font-bold text-gray-700 mb-1">Ciudad / Municipio <span class="req">*</span></label>
+                            <select id="envio-ciudad" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32] bg-white cursor-pointer">
                                 <option value="">Primero seleccione un departamento...</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Dirección exacta</label>
-                            <input type="text" id="envio-direccion" required placeholder="Ej: Calle 45 # 26-10" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            <label for="envio-direccion" class="block text-xs font-bold text-gray-700 mb-1">Dirección exacta <span class="req">*</span></label>
+                            <input type="text" id="envio-direccion" autocomplete="street-address" placeholder="Ej: Calle 45 # 26-10" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Código postal</label>
-                            <input type="text" id="envio-cp" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            <label for="envio-cp" class="block text-xs font-bold text-gray-700 mb-1">Código postal <span class="text-gray-400 font-normal">(Opcional)</span></label>
+                            <input type="text" id="envio-cp" inputmode="numeric" autocomplete="postal-code" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Especificaciones sobre la vivienda <span class="text-gray-400 font-normal">(casa, edificio, etc.)</span></label>
+                            <label for="envio-especificaciones" class="block text-xs font-bold text-gray-700 mb-1">Especificaciones sobre la vivienda <span class="text-gray-400 font-normal">(casa, edificio, etc.)</span> <span class="req">*</span></label>
                             <input type="text" id="envio-especificaciones" placeholder="Ej: Edificio Torres del Parque, Apto 502" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Observaciones para el pedido <span class="text-gray-400 font-normal">(Opcional)</span></label>
+                            <label for="envio-observaciones" class="block text-xs font-bold text-gray-700 mb-1">Observaciones para el pedido <span class="text-gray-400 font-normal">(Opcional)</span></label>
                             <textarea id="envio-observaciones" rows="2" placeholder="Indicaciones especiales de entrega..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]"></textarea>
                         </div>
                     </form>
                 </div>
-
             </div>
 
-            <!-- Resumen de Compra y WhatsApp (Derecha) -->
+            <!-- Resumen -->
             <div class="lg:col-span-1">
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 sticky top-28 space-y-6">
                     <h2 class="text-lg font-bold text-gray-900 border-b pb-3">Resumen del Pedido</h2>
-                    
+
                     <div class="space-y-3 text-sm text-gray-600">
                         <div class="flex justify-between">
                             <span>Subtotal</span>
@@ -171,9 +162,8 @@
                         </div>
                     </div>
 
-                    <!-- Botón de WhatsApp -->
                     <div class="pt-2">
-                        <button onclick="finalizarCompraWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center text-sm cursor-pointer">
+                        <button id="btn-finalizar" onclick="finalizarCompraWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center text-sm cursor-pointer">
                             <i class="fa-brands fa-whatsapp mr-2 text-lg"></i> Finalizar Pedido por WhatsApp
                         </button>
                     </div>
@@ -182,9 +172,7 @@
         </div>
     </main>
 
-    <!-- ========================================== -->
-    <!-- 📌 PIE DE PÁGINA -->
-    <!-- ========================================== -->
+    <!-- PIE DE PÁGINA (contacto personal) -->
     <footer class="bg-white border-t border-gray-100 py-12 mt-16">
         <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
             <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 w-auto mx-auto object-contain">
@@ -198,65 +186,98 @@
         </div>
     </footer>
 
-    <!-- Botón flotante WhatsApp -->
+    <!-- Botón flotante WhatsApp (contacto personal) -->
     <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
 
-    <!-- LÓGICA DE LECTURA DE CSV, USUARIO Y PEDIDOS -->
     <script src="js/app.js"></script>
     <script>
         const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
         const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
+
+        // Número al que llegan los pedidos (sin el 57)
+        const NUMERO_WHATSAPP_PEDIDOS = "3134237667";
+
         let datosGeoColombia = {};
 
+        /* ---------- Utilidades ---------- */
+        function esc(s) {
+            return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+        function leerJSON(clave, defecto) {
+            try {
+                const v = JSON.parse(localStorage.getItem(clave));
+                return v == null ? defecto : v;
+            } catch (e) { return defecto; }
+        }
+        function formatoPeso(n) {
+            return "$" + Number(n || 0).toLocaleString("es-CO");
+        }
+        function convertirPrecioANumero(precioStr) {
+            if (!precioStr) return 0;
+            const limpio = String(precioStr).replace(/[^0-9]/g, "");
+            return parseFloat(limpio) || 0;
+        }
+        function precioDelItem(item) {
+            const n = convertirPrecioANumero(item.precio);
+            if (n > 0) return n;
+            const alt = convertirPrecioANumero(item.precioStr);
+            if (alt > 0) return alt;
+            return Number(item.precioNum) || 0;
+        }
+        function textoPrecio(item) {
+            return item.precio || item.precioStr || formatoPeso(item.precioNum);
+        }
+
         function mostrarError(mensaje) {
-            const contenedorError = document.getElementById("mensaje-error-carrito");
-            if (contenedorError) {
-                contenedorError.textContent = mensaje;
-                contenedorError.classList.remove("hidden");
-                contenedorError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const c = document.getElementById("mensaje-error-carrito");
+            if (c) {
+                c.textContent = mensaje;
+                c.classList.remove("hidden");
+                c.scrollIntoView({ behavior: "smooth", block: "center" });
             }
         }
-
-        function toggleMenuUsuario() {
-            const dropdown = document.getElementById("dropdown-usuario");
-            if (dropdown) dropdown.classList.toggle("hidden");
+        function ocultarError() {
+            const c = document.getElementById("mensaje-error-carrito");
+            if (c) c.classList.add("hidden");
         }
 
+        /* ---------- Menús ---------- */
+        function toggleMenuUsuario() {
+            const d = document.getElementById("dropdown-usuario");
+            if (d) d.classList.toggle("hidden");
+        }
         function cerrarSesionUsuario() {
             localStorage.removeItem("usuarioLogueado");
             localStorage.removeItem("tokenUsuario");
             window.location.reload();
         }
-
-        window.addEventListener("click", function(e) {
-            const dropdownUsr = document.getElementById("dropdown-usuario");
-            const btnUsr = document.getElementById("btn-usuario-activo");
-            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
-                dropdownUsr.classList.add("hidden");
-            }
+        window.addEventListener("click", function (e) {
+            const d = document.getElementById("dropdown-usuario");
+            const b = document.getElementById("btn-usuario-activo");
+            if (d && b && !b.contains(e.target) && !d.contains(e.target)) d.classList.add("hidden");
         });
 
+        /* ---------- Inicio ---------- */
         document.addEventListener("DOMContentLoaded", () => {
-            const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
-            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
-            const contenedorUsuario = document.getElementById("contenedor-usuario-header");
+            const usuarioOriginal = localStorage.getItem("usuarioLogueado") || "";
+            const usuarioLimpio = usuarioOriginal.toLowerCase().trim();
+            const contUsr = document.getElementById("contenedor-usuario-header");
+            const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
 
-            if (contenedorUsuario) {
+            if (contUsr) {
                 if (usuarioLimpio) {
-                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
-                    
-                    contenedorUsuario.innerHTML = `
+                    contUsr.innerHTML = `
                         <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm whitespace-nowrap">
                             <i class="fa-solid fa-user mr-1.5 sm:mr-2 text-[#7A1C32]"></i>
-                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${usuarioLogueadoOriginal}</span>
+                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${esc(usuarioOriginal)}</span>
                             <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                         </button>
                         <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
                             <div class="px-4 py-3 text-xs text-gray-500">
                                 Sesión iniciada como<br>
-                                <strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong>
+                                <strong class="text-gray-800 truncate block">${esc(usuarioOriginal)}</strong>
                             </div>
                             ${esAdmin ? `
                                 <div class="py-1">
@@ -276,278 +297,307 @@
                                     <i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión
                                 </button>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 } else {
-                    contenedorUsuario.innerHTML = `
+                    contUsr.innerHTML = `
                         <a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center shadow-sm whitespace-nowrap">
                             <i class="fa-solid fa-user text-[#7A1C32] mr-1.5 sm:mr-2"></i> <span>Ingresar</span>
-                        </a>
-                    `;
+                        </a>`;
                 }
             }
+
+            // Quitar el rojo de un campo cuando el cliente lo corrige
+            ["envio-nombre", "envio-correo", "envio-telefono", "envio-depto", "envio-ciudad", "envio-direccion", "envio-especificaciones"].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                ["input", "change"].forEach(ev => el.addEventListener(ev, () => el.classList.remove("campo-invalido")));
+            });
 
             if (usuarioLimpio) {
                 const inputCorreo = document.getElementById("envio-correo");
-                const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
-                if (inputCorreo && !esAdmin) inputCorreo.value = usuarioLogueadoOriginal;
-
-                let datosGuardados = JSON.parse(localStorage.getItem("glow_envio_" + usuarioLimpio));
-                if (datosGuardados) {
-                    document.getElementById("envio-nombre").value = datosGuardados.nombre || "";
-                    document.getElementById("envio-telefono").value = datosGuardados.telefono || "";
-                    setTimeout(() => {
-                        if (datosGuardados.depto) {
-                            document.getElementById("envio-depto").value = datosGuardados.depto;
-                            window.cargarMunicipiosDesdeCSV();
-                            document.getElementById("envio-ciudad").value = datosGuardados.ciudad || "";
-                        }
-                    }, 500);
-                    document.getElementById("envio-direccion").value = datosGuardados.direccion || "";
-                    document.getElementById("envio-cp").value = datosGuardados.cp || "";
-                    document.getElementById("envio-especificaciones").value = datosGuardados.especificaciones || "";
-                    document.getElementById("envio-observaciones").value = datosGuardados.observaciones || "";
-                    
-                    const checkGuardar = document.getElementById("check-guardar-datos");
-                    if (checkGuardar) checkGuardar.checked = true;
-                }
+                if (inputCorreo && !esAdmin) inputCorreo.value = usuarioOriginal;
             }
-            
-            cargarGeoDesdeCSV();
+
             renderizarCarrito();
+
+            // Cargar departamentos y, cuando estén listos, restaurar los datos guardados
+            cargarGeoDesdeCSV().then(() => {
+                if (usuarioLimpio) aplicarDatosGuardados(usuarioLimpio);
+            });
         });
 
+        function aplicarDatosGuardados(usuarioLimpio) {
+            const d = leerJSON("glow_envio_" + usuarioLimpio, null);
+            if (!d) return;
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+
+            set("envio-nombre", d.nombre);
+            set("envio-telefono", d.telefono);
+            set("envio-direccion", d.direccion);
+            set("envio-cp", d.cp);
+            set("envio-especificaciones", d.especificaciones);
+            set("envio-observaciones", d.observaciones);
+
+            if (d.depto && datosGeoColombia[d.depto]) {
+                set("envio-depto", d.depto);
+                window.cargarMunicipiosDesdeCSV();
+                set("envio-ciudad", d.ciudad);
+            }
+            const chk = document.getElementById("check-guardar-datos");
+            if (chk) chk.checked = true;
+        }
+
+        /* ---------- Departamentos y municipios ---------- */
         function cargarGeoDesdeCSV() {
-            fetch("municipios_colombia_revisado_completo.csv")
-                .then(res => res.text())
+            return fetch("municipios_colombia_revisado_completo.csv")
+                .then(res => {
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    return res.text();
+                })
                 .then(csvText => {
-                    const lines = csvText.split('\n');
+                    const lines = csvText.split(/\r?\n/);
                     if (lines.length === 0) return;
 
-                    const headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, '').replace(/^\ufeff/, '').toLowerCase());
-                    const deptoIndex = headers.findIndex(h => h.includes('departamento'));
-                    const munIndex = headers.findIndex(h => h.includes('municipio') || h.includes('ciudad'));
-
+                    const headers = lines[0].split(";").map(h => h.trim().replace(/^"|"$/g, "").replace(/^\ufeff/, "").toLowerCase());
+                    const deptoIndex = headers.findIndex(h => h.includes("departamento"));
+                    const munIndex = headers.findIndex(h => h.includes("municipio") || h.includes("ciudad"));
                     const idxDepto = deptoIndex !== -1 ? deptoIndex : 0;
                     const idxMun = munIndex !== -1 ? munIndex : 1;
 
                     datosGeoColombia = {};
-
                     for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
-                        const currentLine = lines[i].split(';');
-                        let depto = currentLine[idxDepto] ? currentLine[idxDepto].trim().replace(/^"|"$/g, '') : '';
-                        let mun = currentLine[idxMun] ? currentLine[idxMun].trim().replace(/^"|"$/g, '') : '';
-
+                        const cols = lines[i].split(";");
+                        const depto = cols[idxDepto] ? cols[idxDepto].trim().replace(/^"|"$/g, "") : "";
+                        const mun = cols[idxMun] ? cols[idxMun].trim().replace(/^"|"$/g, "") : "";
                         if (depto && mun) {
-                            if (!datosGeoColombia[depto]) {
-                                datosGeoColombia[depto] = [];
-                            }
-                            if (!datosGeoColombia[depto].includes(mun)) {
-                                datosGeoColombia[depto].push(mun);
-                            }
+                            if (!datosGeoColombia[depto]) datosGeoColombia[depto] = [];
+                            if (!datosGeoColombia[depto].includes(mun)) datosGeoColombia[depto].push(mun);
                         }
                     }
 
-                    const selectDepto = document.getElementById("envio-depto");
-                    if (selectDepto) {
-                        selectDepto.innerHTML = '<option value="">Seleccione un departamento...</option>';
-                        Object.keys(datosGeoColombia).sort().forEach(depto => {
-                            const option = document.createElement("option");
-                            option.value = depto;
-                            option.textContent = depto;
-                            selectDepto.appendChild(option);
+                    const sel = document.getElementById("envio-depto");
+                    if (sel) {
+                        sel.innerHTML = '<option value="">Seleccione un departamento...</option>';
+                        Object.keys(datosGeoColombia).sort((a, b) => a.localeCompare(b, "es")).forEach(depto => {
+                            const o = document.createElement("option");
+                            o.value = depto;
+                            o.textContent = depto;
+                            sel.appendChild(o);
                         });
                     }
                 })
                 .catch(err => {
                     console.error("Error al cargar el CSV de municipios:", err);
+                    const sel = document.getElementById("envio-depto");
+                    if (sel) sel.innerHTML = '<option value="">No se pudieron cargar los departamentos</option>';
                     mostrarError("⚠️ No se pudo cargar el archivo 'municipios_colombia_revisado_completo.csv'.");
                 });
         }
 
-        window.cargarMunicipiosDesdeCSV = function() {
-            const selectDepto = document.getElementById("envio-depto").value;
-            const selectCiudad = document.getElementById("envio-ciudad");
-            
-            selectCiudad.innerHTML = '<option value="">Seleccione una ciudad / municipio...</option>';
-
-            if (!selectDepto || !datosGeoColombia[selectDepto]) return;
-
-            const municipios = datosGeoColombia[selectDepto].sort();
-            municipios.forEach(mun => {
-                const option = document.createElement("option");
-                option.value = mun;
-                option.textContent = mun;
-                selectCiudad.appendChild(option);
+        window.cargarMunicipiosDesdeCSV = function () {
+            const depto = document.getElementById("envio-depto").value;
+            const selCiudad = document.getElementById("envio-ciudad");
+            selCiudad.innerHTML = '<option value="">Seleccione una ciudad / municipio...</option>';
+            if (!depto || !datosGeoColombia[depto]) return;
+            datosGeoColombia[depto].slice().sort((a, b) => a.localeCompare(b, "es")).forEach(mun => {
+                const o = document.createElement("option");
+                o.value = mun;
+                o.textContent = mun;
+                selCiudad.appendChild(o);
             });
         };
 
-        function convertirPrecioANumero(precioStr) {
-            if (!precioStr) return 0;
-            let limpio = String(precioStr).replace(/[^0-9]/g, "");
-            return parseFloat(limpio) || 0;
-        }
-
+        /* ---------- Carrito ---------- */
         function renderizarCarrito() {
-            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-            const contenedorLleno = document.getElementById("contenedor-carrito-lleno");
-            const contenedorVacio = document.getElementById("contenedor-carrito-vacio");
-            const listaItems = document.getElementById("lista-items-carrito");
+            const carrito = leerJSON("carrito", []);
+            const contLleno = document.getElementById("contenedor-carrito-lleno");
+            const contVacio = document.getElementById("contenedor-carrito-vacio");
+            const lista = document.getElementById("lista-items-carrito");
             const cartCount = document.getElementById("cart-count");
 
-            const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+            const totalItems = carrito.reduce((s, i) => s + (parseInt(i.cantidad, 10) || 0), 0);
             if (cartCount) cartCount.textContent = totalItems;
 
             if (carrito.length === 0) {
-                contenedorLleno.classList.add("hidden");
-                contenedorVacio.classList.remove("hidden");
+                contLleno.classList.add("hidden");
+                contVacio.classList.remove("hidden");
                 return;
             }
 
-            contenedorVacio.classList.add("hidden");
-            contenedorLleno.classList.remove("hidden");
-            listaItems.innerHTML = "";
+            contVacio.classList.add("hidden");
+            contLleno.classList.remove("hidden");
+            lista.innerHTML = "";
 
-            let subtotalGeneral = 0;
+            let subtotal = 0;
 
             carrito.forEach((item, index) => {
-                let precioNumerico = convertirPrecioANumero(item.precio);
-                let totalItem = precioNumerico * item.cantidad;
-                subtotalGeneral += totalItem;
+                const cantidad = parseInt(item.cantidad, 10) || 1;
+                const unit = precioDelItem(item);
+                subtotal += unit * cantidad;
 
                 const portada = item.imagenes && item.imagenes.length > 0 ? item.imagenes[0] : "";
 
-                const cardItem = document.createElement("div");
-                cardItem.className = "bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-4";
-                
-                cardItem.innerHTML = `
+                const card = document.createElement("div");
+                card.className = "bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-4";
+                card.innerHTML = `
                     <div class="w-20 h-20 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 p-2">
-                        ${portada ? `<img src="${portada}" class="w-full h-full object-contain">` : `<i class="fa-solid fa-box text-gray-300"></i>`}
+                        ${portada ? `<img src="${esc(portada)}" class="w-full h-full object-contain" onerror="this.style.display='none'">` : `<i class="fa-solid fa-box text-gray-300"></i>`}
                     </div>
-                    <div class="flex-grow">
-                        <span class="text-xs text-gray-400 font-semibold">${item.sku}</span>
-                        <h3 class="font-bold text-gray-900 text-sm line-clamp-1">${item.nombre}</h3>
-                        <span class="text-[#7A1C32] font-black text-sm">${item.precio}</span>
+                    <div class="flex-grow min-w-0">
+                        <span class="text-xs text-gray-400 font-semibold">${esc(item.sku || "")}</span>
+                        <h3 class="font-bold text-gray-900 text-sm line-clamp-2">${esc(item.nombre)}</h3>
+                        <span class="text-[#7A1C32] font-black text-sm">${esc(textoPrecio(item))}</span>
+                        ${cantidad > 1 ? `<span class="block text-[11px] text-gray-500 font-semibold">Subtotal: ${formatoPeso(unit * cantidad)}</span>` : ""}
                     </div>
                     <div class="flex items-center space-x-2 border border-gray-200 rounded-xl px-2 py-1">
-                        <button onclick="cambiarCantidad(${index}, -1)" class="text-gray-500 hover:text-[#7A1C32] px-2 font-bold cursor-pointer">-</button>
-                        <span class="text-sm font-bold text-gray-800 w-6 text-center">${item.cantidad}</span>
-                        <button onclick="cambiarCantidad(${index}, 1)" class="text-gray-500 hover:text-[#7A1C32] px-2 font-bold cursor-pointer">+</button>
+                        <button onclick="cambiarCantidad(${index}, -1)" aria-label="Disminuir" class="text-gray-500 hover:text-[#7A1C32] px-2 font-bold cursor-pointer">-</button>
+                        <span class="text-sm font-bold text-gray-800 w-6 text-center">${cantidad}</span>
+                        <button onclick="cambiarCantidad(${index}, 1)" aria-label="Aumentar" class="text-gray-500 hover:text-[#7A1C32] px-2 font-bold cursor-pointer">+</button>
                     </div>
-                    <button onclick="eliminarItem(${index})" class="text-gray-400 hover:text-red-500 p-2 transition-colors cursor-pointer">
+                    <button onclick="eliminarItem(${index})" aria-label="Eliminar producto" class="text-gray-400 hover:text-red-500 p-2 transition-colors cursor-pointer">
                         <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                `;
-                listaItems.appendChild(cardItem);
+                    </button>`;
+                lista.appendChild(card);
             });
 
-            document.getElementById("resumen-subtotal").textContent = `$${subtotalGeneral.toLocaleString("es-CO")}`;
-            document.getElementById("resumen-total").textContent = `$${subtotalGeneral.toLocaleString("es-CO")}`;
+            document.getElementById("resumen-subtotal").textContent = formatoPeso(subtotal);
+            document.getElementById("resumen-total").textContent = formatoPeso(subtotal);
         }
 
-        window.cambiarCantidad = function(index, cambio) {
-            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-            carrito[index].cantidad += cambio;
-            if (carrito[index].cantidad <= 0) {
-                carrito.splice(index, 1);
-            }
+        window.cambiarCantidad = function (index, cambio) {
+            const carrito = leerJSON("carrito", []);
+            if (!carrito[index]) return;
+            carrito[index].cantidad = (parseInt(carrito[index].cantidad, 10) || 1) + cambio;
+            if (carrito[index].cantidad <= 0) carrito.splice(index, 1);
             localStorage.setItem("carrito", JSON.stringify(carrito));
             renderizarCarrito();
         };
 
-        window.eliminarItem = function(index) {
-            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+        window.eliminarItem = function (index) {
+            const carrito = leerJSON("carrito", []);
             carrito.splice(index, 1);
             localStorage.setItem("carrito", JSON.stringify(carrito));
             renderizarCarrito();
         };
 
-        function validarFormularioEnvio() {
-            const nombre = document.getElementById("envio-nombre").value.trim();
-            const correo = document.getElementById("envio-correo").value.trim();
-            const telefono = document.getElementById("envio-telefono").value.trim();
-            const depto = document.getElementById("envio-depto").value;
-            const ciudad = document.getElementById("envio-ciudad").value;
-            const direccion = document.getElementById("envio-direccion").value.trim();
+        /* ---------- Validación ---------- */
+        // Obligatorios: todos menos código postal y observaciones
+        const CAMPOS_OBLIGATORIOS = [
+            { id: "envio-nombre", etiqueta: "Nombre completo" },
+            { id: "envio-correo", etiqueta: "Correo electrónico" },
+            { id: "envio-telefono", etiqueta: "Teléfono" },
+            { id: "envio-depto", etiqueta: "Departamento" },
+            { id: "envio-ciudad", etiqueta: "Ciudad / Municipio" },
+            { id: "envio-direccion", etiqueta: "Dirección exacta" },
+            { id: "envio-especificaciones", etiqueta: "Especificaciones de la vivienda" }
+        ];
 
-            if (!nombre || !correo || !telefono || !depto || !ciudad || !direccion) {
-                mostrarError("⚠️ Por favor completa los campos obligatorios de envío (Nombre, Correo, Teléfono, Departamento, Ciudad y Dirección).");
+        function validarFormularioEnvio() {
+            document.querySelectorAll(".campo-invalido").forEach(el => el.classList.remove("campo-invalido"));
+
+            const faltantes = CAMPOS_OBLIGATORIOS.filter(c => {
+                const el = document.getElementById(c.id);
+                return !el || !String(el.value).trim();
+            });
+
+            if (faltantes.length > 0) {
+                faltantes.forEach(c => document.getElementById(c.id).classList.add("campo-invalido"));
+                document.getElementById(faltantes[0].id).focus();
+                mostrarError("⚠️ Completa los campos obligatorios: " + faltantes.map(c => c.etiqueta).join(", ") + ".");
+                return false;
+            }
+
+            const correo = document.getElementById("envio-correo");
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value.trim())) {
+                correo.classList.add("campo-invalido");
+                correo.focus();
+                mostrarError("⚠️ Escribe un correo electrónico válido.");
+                return false;
+            }
+
+            const tel = document.getElementById("envio-telefono");
+            const digitos = tel.value.replace(/\D/g, "");
+            if (digitos.length < 7 || digitos.length > 15) {
+                tel.classList.add("campo-invalido");
+                tel.focus();
+                mostrarError("⚠️ Escribe un número de teléfono válido.");
                 return false;
             }
             return true;
         }
 
-        window.finalizarCompraWhatsApp = function() {
-            document.getElementById("mensaje-error-carrito").classList.add("hidden");
+        /* ---------- Finalizar por WhatsApp ---------- */
+        window.finalizarCompraWhatsApp = function () {
+            ocultarError();
             if (!validarFormularioEnvio()) return;
 
-            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-            if (carrito.length === 0) return;
+            const carrito = leerJSON("carrito", []);
+            if (carrito.length === 0) {
+                mostrarError("⚠️ Tu carrito está vacío.");
+                return;
+            }
 
-            const nombre = document.getElementById("envio-nombre").value.trim();
-            const correo = document.getElementById("envio-correo").value.trim();
-            const telefono = document.getElementById("envio-telefono").value.trim();
+            const val = id => document.getElementById(id).value.trim();
+            const nombre = val("envio-nombre");
+            const correo = val("envio-correo");
+            const telefono = val("envio-telefono");
             const depto = document.getElementById("envio-depto").value;
             const ciudad = document.getElementById("envio-ciudad").value;
-            const direccion = document.getElementById("envio-direccion").value.trim();
-            const cp = document.getElementById("envio-cp").value.trim();
-            const especificaciones = document.getElementById("envio-especificaciones").value.trim();
-            const observaciones = document.getElementById("envio-observaciones").value.trim();
+            const direccion = val("envio-direccion");
+            const cp = val("envio-cp");
+            const especificaciones = val("envio-especificaciones");
+            const observaciones = val("envio-observaciones");
 
-            const checkGuardar = document.getElementById("check-guardar-datos");
-            const usuarioLogueado = (localStorage.getItem("usuarioLogueado") || correo).toLowerCase().trim();
-            
-            if (checkGuardar && checkGuardar.checked) {
-                const datosEnvio = { nombre, correo, telefono, depto, ciudad, direccion, cp, especificaciones, observaciones };
-                localStorage.setItem("glow_envio_" + usuarioLogueado, JSON.stringify(datosEnvio));
+            const chk = document.getElementById("check-guardar-datos");
+            const usuarioClave = (localStorage.getItem("usuarioLogueado") || correo).toLowerCase().trim();
+            if (chk && chk.checked) {
+                localStorage.setItem("glow_envio_" + usuarioClave, JSON.stringify({ nombre, correo, telefono, depto, ciudad, direccion, cp, especificaciones, observaciones }));
             }
 
             let totalProductos = 0;
-            carrito.forEach(item => {
-                totalProductos += convertirPrecioANumero(item.precio) * item.cantidad;
-            });
+            carrito.forEach(item => { totalProductos += precioDelItem(item) * (parseInt(item.cantidad, 10) || 1); });
 
-            let pedidos = JSON.parse(localStorage.getItem("glow_pedidos")) || [];
-            const numeroPedidoConsecutivo = 1000 + pedidos.length + 1;
+            const pedidos = leerJSON("glow_pedidos", []);
+            const maxId = pedidos.reduce((m, p) => Math.max(m, Number(p.id) || 0), 1000);
+            const numeroPedido = maxId + 1;
 
-            const nuevoPedido = {
-                id: numeroPedidoConsecutivo,
+            pedidos.push({
+                id: numeroPedido,
                 usuario: correo,
                 nombreCliente: nombre,
                 telefonoCliente: telefono,
                 ubicacion: `${ciudad}, ${depto}`,
                 direccion: direccion,
-                especificaciones: especificaciones || 'No especificada',
-                observaciones: observaciones || 'Ninguna',
-                items: [...carrito],
+                codigoPostal: cp || "No especificado",
+                especificaciones: especificaciones,
+                observaciones: observaciones || "Ninguna",
+                items: carrito.map(i => ({ ...i })),
                 total: totalProductos,
                 estado: "Pendiente a confirmación",
                 guia: "",
                 fecha: new Date().toLocaleString()
-            };
-
-            pedidos.push(nuevoPedido);
+            });
             localStorage.setItem("glow_pedidos", JSON.stringify(pedidos));
 
-            let mensaje = `Glow & Go - Mi pedido\n\nTu pedido ya se encuentra registrado pendiente a confirmación.\n\n*Datos del Cliente:*\n- Nombre: ${nombre}\n- Teléfono: ${telefono}\n- Correo: ${correo}\n- Destino: ${ciudad}, ${depto}\n- Dirección: ${direccion}\n- Espec. vivienda: ${especificaciones || 'Ninguna'}\n- Obs: ${observaciones || 'Ninguna'}\n\n*Productos solicitados:*\n`;
+            let mensaje = `Glow & Go - Mi pedido #${numeroPedido}\n\nTu pedido ya se encuentra registrado pendiente a confirmación.\n\n*Datos del Cliente:*\n- Nombre: ${nombre}\n- Teléfono: ${telefono}\n- Correo: ${correo}\n- Destino: ${ciudad}, ${depto}\n- Dirección: ${direccion}\n${cp ? `- Código postal: ${cp}\n` : ""}- Espec. vivienda: ${especificaciones}\n- Obs: ${observaciones || "Ninguna"}\n\n*Productos solicitados:*\n`;
 
             carrito.forEach(item => {
-                let precioUnitarioNum = convertirPrecioANumero(item.precio);
-                let totalItem = precioUnitarioNum * item.cantidad;
-                mensaje += `• ${item.nombre} (SKU: ${item.sku}) | Cant: ${item.cantidad} | P. Unit: $${precioUnitarioNum.toLocaleString("es-CO")} | Total: $${totalItem.toLocaleString("es-CO")}\n`;
+                const cant = parseInt(item.cantidad, 10) || 1;
+                const unit = precioDelItem(item);
+                mensaje += `• ${item.nombre} (SKU: ${item.sku || "N/A"}) | Cant: ${cant} | P. Unit: ${formatoPeso(unit)} | Total: ${formatoPeso(unit * cant)}\n`;
             });
 
-            mensaje += `\n*Total a pagar (Productos):* $${totalProductos.toLocaleString("es-CO")}\n\n*A la espera de confirmación de precio de envío, suministrímeme medios de pago para finalizar mi compra.*`;
+            mensaje += `\n*Total a pagar (Productos):* ${formatoPeso(totalProductos)}\n\n*A la espera de confirmación de precio de envío, suministrímeme medios de pago para finalizar mi compra.*`;
 
             localStorage.removeItem("carrito");
 
-            const numeroWhatsApp = "3107027780";
-            const url = `https://wa.me/57${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+            const url = `https://wa.me/57${NUMERO_WHATSAPP_PEDIDOS}?text=${encodeURIComponent(mensaje)}`;
             window.open(url, "_blank");
 
-            window.location.href = "mis-pedidos.html";
+            setTimeout(() => { window.location.href = "mis-pedidos.html"; }, 600);
         };
     </script>
 </body>
 </html>
+
