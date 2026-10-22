@@ -1,32 +1,15 @@
-  <!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="es">
 <head>
     <link rel="icon" type="image/png" href="./favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Categorías - Glow & Go</title>
+    <title>Carrito de Compras - Glow & Go</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- Librería para generar el catálogo PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-    <!-- ESTILOS CSS PERSONALIZADOS -->
     <style>
-        :root {
-            --color-cereza: #7A1C32;
-            --color-cereza-oscuro: #621628;
-            --color-dorado: #D4AF37;
-        }
-
-        .barra-catalogo-estetica {
-            background: linear-gradient(135deg, #7A1C32 0%, #521221 100%);
-            border-top: 2px solid #D4AF37;
-            border-bottom: 2px solid #D4AF37;
-            box-shadow: 0 4px 20px rgba(122, 28, 50, 0.25);
-        }
-
         header.sticky {
             position: fixed !important;
             top: 0 !important;
@@ -36,156 +19,172 @@
             background-color: #ffffff !important;
         }
 
-        body { padding-top: 96px; }
-
-        #modal-detalle { z-index: 100000 !important; }
-
-        .zoom-container {
-            position: relative;
-            overflow: hidden;
-            cursor: zoom-in;
+        body {
+            padding-top: 96px;
         }
-        .zoom-container img { transition: transform 0.3s ease; }
-
-        /* Transiciones suaves al cambiar de categoría */
-        #catalog-full-grid { transition: opacity 0.18s ease; }
-        #catalog-full-grid.desvanecer { opacity: 0; }
-        #categoria-titulo { transition: opacity 0.18s ease; }
-        #categoria-titulo.desvanecer { opacity: 0; }
-
-        /* Aviso al añadir al carrito */
-        #toast-carrito {
-            position: fixed;
-            left: 50%;
-            bottom: 28px;
-            transform: translate(-50%, 20px);
-            z-index: 300000;
-            background: #7A1C32;
-            color: #fff;
-            padding: 12px 20px;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 700;
-            box-shadow: 0 10px 30px rgba(0,0,0,.25);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .25s ease, transform .25s ease;
-        }
-        #toast-carrito.visible { opacity: 1; transform: translate(-50%, 0); }
-
-        /* Ventana de espera del generador PDF */
-        #estado-generacion-pdf {
-            position: fixed;
-            inset: 0;
-            z-index: 200000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background: rgba(25, 10, 15, 0.72);
-            backdrop-filter: blur(5px);
-        }
-        #estado-generacion-pdf.visible { display: flex; }
-        .pdf-cargando-tarjeta {
-            width: 100%;
-            max-width: 360px;
-            padding: 32px 24px;
-            border-radius: 24px;
-            background: #fff;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-        }
-        .pdf-spinner {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 18px;
-            border: 5px solid #f2dfe4;
-            border-top-color: #7A1C32;
-            border-radius: 50%;
-            animation: girar-pdf 0.8s linear infinite;
-        }
-        @keyframes girar-pdf { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
-
-   <!-- HEADER / NAVEGACIÓN PRINCIPAL -->
-   <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
-       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
-           <div class="flex items-center space-x-3 flex-shrink-0">
-               <a href="index.html" class="flex items-center">
-                   <img src="logo_glow.jpg" alt="Glow & Go" class="h-14 sm:h-16 lg:h-20 w-auto object-contain">
-               </a>
-           </div>
-
-           <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
-               <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
-               <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
-               <div class="relative">
-                   <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-bold text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
-                       Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
-                   </button>
-                   <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
-               </div>
-           </nav>
-
-           <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-between lg:justify-end">
-               <div class="relative flex items-center flex-grow lg:w-64 xl:w-80">
-                   <div class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors px-3 py-1.5 sm:py-2.5 rounded-xl border border-gray-200 shadow-sm w-full">
-                       <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
-                       <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
-                   </div>
-                   <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[999999] p-2 divide-y divide-gray-50"></div>
-               </div>
-               <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
-               <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
-                   <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2 text-white"></i> <span>Carrito</span>
-                   <span id="cart-count" class="ml-1.5 sm:ml-2 bg-white text-[#7A1C32] text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
-               </a>
-           </div>
-       </div>
-   </header>
-
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-8 text-center relative overflow-hidden">
-            <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
-            <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
-            <h1 id="categoria-titulo" class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">Cargando...</h1>
-
-            <button id="btn-generar-catalogo-pdf" type="button" onclick="generarCatalogoPDF()" class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-extrabold text-[#7A1C32] shadow-lg transition-all hover:bg-amber-50 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-wait">
-                <i class="fa-solid fa-file-pdf"></i>
-                <span>Generar catálogo PDF</span>
-            </button>
-        </div>
-
-        <div class="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-4 lg:gap-8">
-            <div class="lg:hidden bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <h3 class="text-sm font-black text-gray-900 mb-3 flex items-center">
-                    <i class="fa-solid fa-list mr-2 text-[#7A1C32]"></i> Cambiar Categoría
-                </h3>
-                <div id="lista-categorias-movil" class="flex items-center gap-2 overflow-x-auto pb-2"></div>
+    
+    <!-- ========================================== -->
+    <!-- 📌 HEADER -->
+    <!-- ========================================== -->
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
+            <div class="flex items-center space-x-3 flex-shrink-0">
+                <a href="index.html" class="flex items-center">
+                    <img src="logo_glow.jpg" alt="Glow & Go" class="h-14 sm:h-16 lg:h-20 w-auto object-contain">
+                </a>
             </div>
 
-            <aside class="hidden lg:block lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit sticky top-28 max-h-[80vh] overflow-y-auto">
-                <h3 class="text-lg font-black text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center">
-                    <i class="fa-solid fa-list mr-2 text-[#7A1C32]"></i> Categorías
-                </h3>
-                <div id="lista-categorias-lateral" class="space-y-2"></div>
-            </aside>
+            <!-- Navegación central con menú desplegable adaptado -->
+            <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
+                <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
+                <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
+                
+                <div class="relative">
+                    <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
+                        Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                    </button>
+                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50">
+                        <!-- Se llena dinámicamente con JS -->
+                    </div>
+                </div>
+            </nav>
 
-            <div class="lg:col-span-3">
-                <section>
-                    <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        <div class="col-span-full text-center text-gray-400 py-16 text-sm font-semibold">
-                            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando productos...
+            <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-between lg:justify-end">
+                <!-- USUARIO DINÁMICO -->
+                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
+
+                <!-- Botón de Carrito -->
+                <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-xs flex-shrink-0 whitespace-nowrap">
+                    <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2"></i> <span>Carrito</span> 
+                    <span id="cart-count" class="ml-1.5 sm:ml-2 bg-white text-[#7A1C32] text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido del Carrito -->
+    <main class="max-w-7xl mx-auto px-4 py-12">
+        <h1 class="text-3xl font-black text-gray-900 mb-8 flex items-center">
+            <i class="fa-solid fa-cart-shopping text-[#7A1C32] mr-3"></i> Tu Carrito de Compras
+        </h1>
+
+        <div id="contenedor-carrito-vacio" class="hidden text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
+            <i class="fa-solid fa-cart-arrow-down text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-xl font-bold text-gray-700 mb-2">Tu carrito está vacío</h2>
+            <p class="text-gray-500 text-sm mb-6">Explora nuestro catálogo y descubre productos increíbles.</p>
+            <a href="catalogo.html" class="inline-block bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold px-6 py-3 rounded-xl transition-colors text-sm shadow-md">
+                Ver Catálogo
+            </a>
+        </div>
+
+        <div id="contenedor-carrito-lleno" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Listado de Productos y Formulario de Envío (Izquierda) -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Listado de ítems -->
+                <div class="space-y-4" id="lista-items-carrito">
+                    <!-- Se llena dinámicamente -->
+                </div>
+
+                <!-- Formulario de Dirección y Datos de Envío -->
+                <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 border-b border-gray-100 pb-4 gap-4">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                            <i class="fa-solid fa-location-dot text-[#7A1C32] mr-2.5"></i> Dirección de Envío y Datos
+                        </h2>
+                        <!-- Botón de guardar información para pedidos futuros -->
+                        <label class="flex items-center space-x-2 bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none">
+                            <input type="checkbox" id="check-guardar-datos" class="w-4 h-4 accent-[#7A1C32] rounded cursor-pointer">
+                            <span>Guardar información para envíos futuros</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Mensaje de error personalizado en rojo -->
+                    <div id="mensaje-error-carrito" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center"></div>
+
+                    <form id="form-envio" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Nombre completo</label>
+                            <input type="text" id="envio-nombre" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Correo electrónico</label>
+                            <input type="email" id="envio-correo" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Número de teléfono / celular</label>
+                            <input type="tel" id="envio-telefono" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Departamento</label>
+                            <select id="envio-depto" onchange="cargarMunicipiosDesdeCSV()" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32] bg-white cursor-pointer">
+                                <option value="">Cargando departamentos...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Ciudad / Municipio</label>
+                            <select id="envio-ciudad" required class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32] bg-white cursor-pointer">
+                                <option value="">Primero seleccione un departamento...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Dirección exacta</label>
+                            <input type="text" id="envio-direccion" required placeholder="Ej: Calle 45 # 26-10" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Código postal</label>
+                            <input type="text" id="envio-cp" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Especificaciones sobre la vivienda <span class="text-gray-400 font-normal">(casa, edificio, etc.)</span></label>
+                            <input type="text" id="envio-especificaciones" placeholder="Ej: Edificio Torres del Parque, Apto 502" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Observaciones para el pedido <span class="text-gray-400 font-normal">(Opcional)</span></label>
+                            <textarea id="envio-observaciones" rows="2" placeholder="Indicaciones especiales de entrega..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]"></textarea>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+
+            <!-- Resumen de Compra y WhatsApp (Derecha) -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 sticky top-28 space-y-6">
+                    <h2 class="text-lg font-bold text-gray-900 border-b pb-3">Resumen del Pedido</h2>
+                    
+                    <div class="space-y-3 text-sm text-gray-600">
+                        <div class="flex justify-between">
+                            <span>Subtotal</span>
+                            <span id="resumen-subtotal" class="font-semibold text-gray-900">$0</span>
+                        </div>
+                        <div class="flex justify-between pb-3 border-b">
+                            <span>Envío estimado</span>
+                            <span class="text-[#7A1C32] font-semibold">A confirmar por WhatsApp</span>
+                        </div>
+                        <div class="flex justify-between text-base font-black text-gray-900 pt-1">
+                            <span>Total productos</span>
+                            <span id="resumen-total" class="text-[#7A1C32] text-xl">$0</span>
                         </div>
                     </div>
-                </section>
+
+                    <!-- Botón de WhatsApp -->
+                    <div class="pt-2">
+                        <button onclick="finalizarCompraWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center text-sm cursor-pointer">
+                            <i class="fa-brands fa-whatsapp mr-2 text-lg"></i> Finalizar Pedido por WhatsApp
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
-    <!-- PIE DE PÁGINA -->
+    <!-- ========================================== -->
+    <!-- 📌 PIE DE PÁGINA -->
+    <!-- ========================================== -->
     <footer class="bg-white border-t border-gray-100 py-12 mt-16">
         <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
             <img src="logo_glow.jpg" alt="Glow & Go" class="h-16 w-auto mx-auto object-contain">
@@ -199,733 +198,356 @@
         </div>
     </footer>
 
-    <!-- BOTÓN WHATSAPP -->
-    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go%20y%20quiero%20más%20información" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+    <!-- Botón flotante WhatsApp -->
+    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
 
-    <!-- VENTANA DE ESPERA DEL PDF -->
-    <div id="estado-generacion-pdf" role="status" aria-live="polite">
-        <div class="pdf-cargando-tarjeta">
-            <div class="pdf-spinner"></div>
-            <h2 id="texto-estado-pdf" class="text-xl font-black text-[#7A1C32] mb-2">Creando catálogo</h2>
-            <p class="text-sm text-gray-600">Por favor espere mientras organizamos las categorías, las imágenes y los precios.</p>
-        </div>
-    </div>
-
-    <!-- MODAL DE DETALLE -->
-    <div id="modal-detalle" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 lg:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button onclick="cerrarModalDetalle()" aria-label="Cerrar detalle" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer z-10">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div id="modal-contenido" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
-        </div>
-    </div>
-
-    <div id="toast-carrito" role="status" aria-live="polite"></div>
-
-    <!-- SCRIPT PRINCIPAL EXISTENTE -->
+    <!-- LÓGICA DE LECTURA DE CSV, USUARIO Y PEDIDOS -->
     <script src="js/app.js"></script>
-
     <script>
-    (function () {
-        "use strict";
-
         const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
         const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
+        let datosGeoColombia = {};
 
-        /* ---------- Utilidades ---------- */
-        function normCat(v) {
-            return String(v || "")
-                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                .replace(/[^a-zA-Z0-9]+/g, " ")
-                .trim().toUpperCase();
-        }
-        function esc(s) {
-            return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-        }
-        function inventarioListo() {
-            return typeof productosInventario !== "undefined" && Array.isArray(productosInventario) && productosInventario.length > 0;
+        function mostrarError(mensaje) {
+            const contenedorError = document.getElementById("mensaje-error-carrito");
+            if (contenedorError) {
+                contenedorError.textContent = mensaje;
+                contenedorError.classList.remove("hidden");
+                contenedorError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
-        /* ---------- Usuario ---------- */
-        window.toggleMenuUsuario = function () {
-            const d = document.getElementById("dropdown-usuario");
-            if (d) d.classList.toggle("hidden");
-        };
-        window.cerrarSesionUsuario = function () {
+        function toggleMenuUsuario() {
+            const dropdown = document.getElementById("dropdown-usuario");
+            if (dropdown) dropdown.classList.toggle("hidden");
+        }
+
+        function cerrarSesionUsuario() {
             localStorage.removeItem("usuarioLogueado");
             localStorage.removeItem("tokenUsuario");
             window.location.reload();
-        };
-        window.toggleMenuCategoriasHeader = function () {
-            const d = document.getElementById("dropdown-categorias-header");
-            if (d) d.classList.toggle("hidden");
-        };
+        }
 
-        window.addEventListener("click", function (e) {
+        window.addEventListener("click", function(e) {
             const dropdownUsr = document.getElementById("dropdown-usuario");
             const btnUsr = document.getElementById("btn-usuario-activo");
-            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) dropdownUsr.classList.add("hidden");
-
-            const dropdownBusqueda = document.getElementById("dropdown-busqueda");
-            const inputBuscador = document.getElementById("input-buscador");
-            if (dropdownBusqueda && inputBuscador && !inputBuscador.contains(e.target) && !dropdownBusqueda.contains(e.target)) dropdownBusqueda.classList.add("hidden");
-
-            const dropCat = document.getElementById("dropdown-categorias-header");
-            if (dropCat && !dropCat.classList.contains("hidden") && !dropCat.contains(e.target) && !e.target.closest("[onclick*='toggleMenuCategoriasHeader']")) dropCat.classList.add("hidden");
-        });
-
-        /* ---------- Carrito ---------- */
-        function leerCarrito() {
-            try { const c = JSON.parse(localStorage.getItem("carrito")); return Array.isArray(c) ? c : []; }
-            catch (e) { return []; }
-        }
-        function refrescarContadorCarrito() {
-            const total = leerCarrito().reduce((s, i) => s + (parseInt(i.cantidad, 10) || 1), 0);
-            const el = document.getElementById("cart-count");
-            if (el) el.textContent = total;
-            if (typeof actualizarContadorCarrito === "function") {
-                try { actualizarContadorCarrito(); } catch (e) {}
-            }
-        }
-        let toastTimer;
-        function mostrarAviso(msg) {
-            const t = document.getElementById("toast-carrito");
-            if (!t) return;
-            t.innerHTML = '<i class="fa-solid fa-check mr-2"></i>' + esc(msg);
-            t.classList.add("visible");
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => t.classList.remove("visible"), 1800);
-        }
-        function anadirAlCarritoGlow(producto, cantidad) {
-            if (!producto) return false;
-            cantidad = Math.max(1, parseInt(cantidad, 10) || 1);
-            const carrito = leerCarrito();
-            const existente = carrito.find(i => (i.sku && producto.sku && i.sku === producto.sku) || i.nombre === producto.nombre);
-            if (existente) {
-                existente.cantidad = (parseInt(existente.cantidad, 10) || 0) + cantidad;
-            } else {
-                carrito.push({
-                    sku: producto.sku,
-                    nombre: producto.nombre,
-                    precio: producto.precioStr || producto.precio,
-                    precioStr: producto.precioStr || producto.precio,
-                    precioNum: producto.precioNum,
-                    imagenes: producto.imagenes,
-                    categoria: producto.categoria,
-                    cantidad: cantidad
-                });
-            }
-            try { localStorage.setItem("carrito", JSON.stringify(carrito)); }
-            catch (e) { mostrarAviso("No se pudo guardar el carrito"); return false; }
-            refrescarContadorCarrito();
-            mostrarAviso("Añadido al carrito");
-            return true;
-        }
-
-        /* ---------- Modal de detalle ---------- */
-        window.cerrarModalDetalle = function () {
-            document.getElementById("modal-detalle").classList.add("hidden");
-        };
-        document.addEventListener("keydown", e => { if (e.key === "Escape") window.cerrarModalDetalle(); });
-        document.getElementById("modal-detalle").addEventListener("click", e => {
-            if (e.target.id === "modal-detalle") window.cerrarModalDetalle();
-        });
-
-        function abrirDetalle(producto) {
-            if (!producto) return;
-            const modal = document.getElementById("modal-detalle");
-            const contenido = document.getElementById("modal-contenido");
-            const imgs = producto.imagenes && producto.imagenes.length ? producto.imagenes : ["logo_glow.jpg"];
-            let actual = 0;
-
-            function pintar() {
-                contenido.innerHTML = `
-                    <div class="flex flex-col items-center">
-                        <div class="w-full bg-gray-50 rounded-2xl flex items-center justify-center p-4 h-60 sm:h-80 zoom-container mb-3" id="zoom-box">
-                            <img id="imagen-principal-modal" src="${esc(imgs[actual])}" class="w-full h-full object-contain pointer-events-none" onerror="this.src='logo_glow.jpg';">
-                        </div>
-                        <p class="text-[11px] text-gray-400 italic mb-3"><i class="fa-solid fa-magnifying-glass mr-1"></i> Toca o pasa el cursor para zoom</p>
-                        ${imgs.length > 1 ? `
-                            <div class="flex items-center gap-2 overflow-x-auto w-full py-1">
-                                ${imgs.map((img, i) => `
-                                    <button type="button" data-miniatura="${i}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 overflow-hidden bg-white p-1 flex-shrink-0 ${i === actual ? 'border-[#7A1C32]' : 'border-gray-200 opacity-70'}">
-                                        <img src="${esc(img)}" class="w-full h-full object-contain" onerror="this.src='logo_glow.jpg';">
-                                    </button>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="flex flex-col justify-between">
-                        <div>
-                            <span class="text-xs font-bold text-gray-400 uppercase">${esc(producto.sku || '')}</span>
-                            <h2 class="text-lg sm:text-xl font-black text-gray-900 mt-1">${esc(producto.nombre)}</h2>
-                            <p class="text-base sm:text-lg font-black text-[#7A1C32] mt-2">${esc(producto.precioStr || producto.precio || '')}</p>
-                            <p class="text-xs sm:text-sm text-gray-600 mt-4 leading-relaxed">${esc(producto.descripcion || producto.especificaciones || '')}</p>
-                        </div>
-                        <div class="mt-6">
-                            <label class="block text-xs font-semibold text-gray-700 mb-2">Cantidad</label>
-                            <input id="cantidad-producto" type="number" min="1" value="1" class="w-24 border border-gray-300 rounded-lg px-3 py-2 mb-4 text-sm">
-                            <button id="btn-agregar-carrito-directo" type="button" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-sm cursor-pointer flex items-center justify-center">
-                                <i class="fa-solid fa-cart-shopping mr-2"></i> Añadir al carrito
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                const zoomBox = document.getElementById("zoom-box");
-                const imgModal = document.getElementById("imagen-principal-modal");
-                zoomBox.addEventListener("mousemove", e => {
-                    const r = zoomBox.getBoundingClientRect();
-                    imgModal.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
-                    imgModal.style.transform = "scale(2.2)";
-                });
-                zoomBox.addEventListener("mouseleave", () => {
-                    imgModal.style.transformOrigin = "center center";
-                    imgModal.style.transform = "scale(1)";
-                });
-
-                contenido.querySelectorAll("[data-miniatura]").forEach(b => {
-                    b.addEventListener("click", () => { actual = parseInt(b.dataset.miniatura, 10); pintar(); });
-                });
-
-                document.getElementById("btn-agregar-carrito-directo").addEventListener("click", () => {
-                    const cant = document.getElementById("cantidad-producto").value;
-                    if (anadirAlCarritoGlow(producto, cant)) window.cerrarModalDetalle();
-                });
-            }
-
-            pintar();
-            modal.classList.remove("hidden");
-        }
-        window.abrirDetalleProductoDirectoIndex = abrirDetalle;
-
-        /* ---------- Buscador ---------- */
-        window.buscarProductosTiempoReal = function (texto) {
-            const dropdown = document.getElementById("dropdown-busqueda");
-            if (!dropdown) return;
-            const query = String(texto || "").toLowerCase().trim();
-
-            if (!query || query.length < 2) {
-                dropdown.classList.add("hidden");
-                dropdown.innerHTML = "";
-                return;
-            }
-            if (!inventarioListo()) {
-                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">Cargando inventario...</div>`;
-                dropdown.classList.remove("hidden");
-                return;
-            }
-
-            const palabras = query.split(/\s+/).filter(Boolean);
-            const resultados = productosInventario.filter(p => {
-                const nombre = (p.nombre || "").toLowerCase();
-                const categoria = (p.categoria || "").toLowerCase();
-                const sku = (p.sku || "").toLowerCase();
-                const palabrasNombre = nombre.split(/\s+/);
-                return palabras.every(q =>
-                    palabrasNombre.some(pn => pn.startsWith(q)) || categoria.startsWith(q) || sku.startsWith(q)
-                );
-            }).slice(0, 6);
-
-            if (resultados.length === 0) {
-                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>`;
-                dropdown.classList.remove("hidden");
-                return;
-            }
-
-            dropdown.innerHTML = resultados.map(p => {
-                const idx = productosInventario.indexOf(p);
-                const img = p.imagenes && p.imagenes[0] ? p.imagenes[0] : "logo_glow.jpg";
-                return `
-                    <div data-resultado="${idx}" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
-                        <img src="${esc(img)}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
-                        <div class="flex-grow min-w-0">
-                            <h4 class="text-xs font-bold text-gray-800 truncate">${esc(p.nombre)}</h4>
-                            <span class="text-[10px] text-[#7A1C32] font-semibold">${esc(p.precioStr || p.precio || '$0')}</span>
-                        </div>
-                    </div>`;
-            }).join("");
-            dropdown.classList.remove("hidden");
-        };
-
-        document.getElementById("dropdown-busqueda").addEventListener("click", e => {
-            const fila = e.target.closest("[data-resultado]");
-            if (!fila) return;
-            const p = productosInventario[parseInt(fila.dataset.resultado, 10)];
-            document.getElementById("dropdown-busqueda").classList.add("hidden");
-            abrirDetalle(p);
-        });
-
-        /* ---------- Categorías ---------- */
-        let categorias = [];      // [{ key, nombre, disponible }]
-        let categoriaActivaKey = "";
-
-        function construirCategorias() {
-            const mapa = new Map();
-            const keysCsv = new Set(productosInventario.map(p => normCat(p.categoria)));
-
-            if (typeof categoriasOficiales !== "undefined" && Array.isArray(categoriasOficiales)) {
-                categoriasOficiales.forEach(c => {
-                    const key = normCat(c.nombre);
-                    if (!key || mapa.has(key)) return;
-                    mapa.set(key, { key, nombre: c.nombre, disponible: keysCsv.has(key) });
-                });
-            }
-            // Categorías del inventario que no estén en la lista oficial: también disponibles
-            productosInventario.forEach(p => {
-                const key = normCat(p.categoria);
-                if (!key || mapa.has(key)) return;
-                mapa.set(key, { key, nombre: String(p.categoria).trim().toUpperCase(), disponible: true });
-            });
-            categorias = Array.from(mapa.values());
-        }
-
-        function htmlLateral() {
-            return categorias.map(cat => {
-                const activo = cat.key === categoriaActivaKey;
-                if (cat.disponible) {
-                    return `
-                        <a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" data-cat="${esc(cat.key)}" class="enlace-cat flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase transition-all ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
-                            <span>${esc(cat.nombre)}</span>
-                            <span class="text-xs px-2 py-0.5 rounded-full ${activo ? 'bg-white text-[#7A1C32]' : 'bg-green-100 text-green-700'} font-extrabold">Disponible</span>
-                        </a>`;
-                }
-                return `
-                    <div class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase bg-gray-50 text-gray-400 opacity-60">
-                        <span>${esc(cat.nombre)}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-extrabold">Próximamente</span>
-                    </div>`;
-            }).join("");
-        }
-
-        function htmlMovil() {
-            return categorias.map(cat => {
-                const activo = cat.key === categoriaActivaKey;
-                if (cat.disponible) {
-                    return `<a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" data-cat="${esc(cat.key)}" class="enlace-cat flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}">${esc(cat.nombre)}</a>`;
-                }
-                return `<span class="flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase whitespace-nowrap bg-gray-50 text-gray-400 opacity-60">${esc(cat.nombre)} · Próximamente</span>`;
-            }).join("");
-        }
-
-        function htmlHeader() {
-            return categorias.map(cat => {
-                if (cat.disponible) {
-                    return `<a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" data-cat="${esc(cat.key)}" class="enlace-cat block px-4 py-2.5 text-xs font-bold uppercase text-gray-700 hover:bg-[#7A1C32]/10 hover:text-[#7A1C32] rounded-xl transition-colors">${esc(cat.nombre)}</a>`;
-                }
-                return `<div class="flex items-center justify-between px-4 py-2.5 text-xs font-bold uppercase text-gray-400 opacity-60"><span>${esc(cat.nombre)}</span><span class="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Próximamente</span></div>`;
-            }).join("");
-        }
-
-        function pintarListas() {
-            const lat = document.getElementById("lista-categorias-lateral");
-            const mov = document.getElementById("lista-categorias-movil");
-            const hdr = document.getElementById("dropdown-categorias-header");
-            if (lat) lat.innerHTML = htmlLateral();
-            if (mov) mov.innerHTML = htmlMovil();
-            if (hdr) hdr.innerHTML = htmlHeader();
-            // Mantener visible la categoría activa en la barra móvil
-            const act = mov && mov.querySelector(".bg-\\[\\#7A1C32\\]");
-            if (act && act.scrollIntoView) act.scrollIntoView({ inline: "center", block: "nearest" });
-        }
-
-        function productosDeCategoria(key) {
-            return productosInventario.filter(p => normCat(p.categoria) === key);
-        }
-
-        function tarjetaProducto(p) {
-            const idx = productosInventario.indexOf(p);
-            const img = p.imagenes && p.imagenes[0] ? p.imagenes[0] : "logo_glow.jpg";
-            return `
-                <article class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-                    <div data-ver="${idx}" class="cursor-pointer bg-gray-50 h-48 flex items-center justify-center p-3">
-                        <img src="${esc(img)}" alt="${esc(p.nombre)}" loading="lazy" class="w-full h-full object-contain" onerror="this.src='logo_glow.jpg'">
-                    </div>
-                    <div class="p-4 flex flex-col flex-grow">
-                        <h3 data-ver="${idx}" class="text-sm font-bold text-gray-900 leading-snug cursor-pointer hover:text-[#7A1C32] line-clamp-2">${esc(p.nombre)}</h3>
-                        <p class="text-base font-black text-[#7A1C32] mt-1">${esc(p.precioStr || p.precio || '')}</p>
-                        <div class="mt-auto pt-3 flex gap-2">
-                            <button type="button" data-ver="${idx}" class="flex-1 border border-[#7A1C32] text-[#7A1C32] hover:bg-[#7A1C32]/10 font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer">Ver detalle</button>
-                            <button type="button" data-add="${idx}" class="flex-1 bg-[#7A1C32] hover:bg-[#621628] text-white font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center"><i class="fa-solid fa-cart-shopping mr-1.5"></i> Añadir</button>
-                        </div>
-                    </div>
-                </article>`;
-        }
-
-        function pintarProductos() {
-            const grid = document.getElementById("catalog-full-grid");
-            const lista = productosDeCategoria(categoriaActivaKey);
-            grid.innerHTML = lista.length
-                ? lista.map(tarjetaProducto).join("")
-                : `<div class="col-span-full text-center text-gray-400 py-16 text-sm font-semibold">No hay productos en esta categoría todavía.</div>`;
-        }
-
-        document.getElementById("catalog-full-grid").addEventListener("click", e => {
-            const btnAdd = e.target.closest("[data-add]");
-            if (btnAdd) {
-                e.stopPropagation();
-                anadirAlCarritoGlow(productosInventario[parseInt(btnAdd.dataset.add, 10)], 1);
-                return;
-            }
-            const ver = e.target.closest("[data-ver]");
-            if (ver) abrirDetalle(productosInventario[parseInt(ver.dataset.ver, 10)]);
-        });
-
-        let primeraCarga = true;
-        function mostrarCategoria(key, empujarHistorial) {
-            const cat = categorias.find(c => c.key === key && c.disponible);
-            if (!cat) return;
-            const titulo = document.getElementById("categoria-titulo");
-            const grid = document.getElementById("catalog-full-grid");
-
-            const aplicar = () => {
-                categoriaActivaKey = key;
-                titulo.textContent = "Categoría: " + cat.nombre;
-                pintarListas();
-                pintarProductos();
-                titulo.classList.remove("desvanecer");
-                grid.classList.remove("desvanecer");
-            };
-
-            if (empujarHistorial) {
-                history.pushState({ cat: key }, "", "categorias.html?cat=" + encodeURIComponent(cat.nombre));
-            }
-
-            if (primeraCarga) {
-                primeraCarga = false;
-                aplicar();
-                return;
-            }
-            titulo.classList.add("desvanecer");
-            grid.classList.add("desvanecer");
-            setTimeout(aplicar, 180);
-        }
-
-        // Cambio de categoría sin recargar la página (sin parpadeo)
-        document.addEventListener("click", e => {
-            const enlace = e.target.closest("a.enlace-cat");
-            if (!enlace) return;
-            e.preventDefault();
-            const dropCat = document.getElementById("dropdown-categorias-header");
-            if (dropCat) dropCat.classList.add("hidden");
-            const key = enlace.dataset.cat;
-            if (key && key !== categoriaActivaKey) {
-                mostrarCategoria(key, true);
-                window.scrollTo({ top: 0, behavior: "smooth" });
+            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
+                dropdownUsr.classList.add("hidden");
             }
         });
 
-        window.addEventListener("popstate", () => {
-            if (!categorias.length) return;
-            const param = new URLSearchParams(window.location.search).get("cat");
-            const key = normCat(param ? decodeURIComponent(param) : "");
-            const cat = categorias.find(c => c.key === key && c.disponible) || categorias.find(c => c.disponible);
-            if (cat) mostrarCategoria(cat.key, false);
-        });
-
-        /* ---------- Inicio ---------- */
         document.addEventListener("DOMContentLoaded", () => {
-            // Usuario
-            const original = localStorage.getItem("usuarioLogueado") || "";
-            const limpio = original.toLowerCase().trim();
-            const contUsr = document.getElementById("contenedor-usuario-header");
-            if (contUsr) {
-                if (limpio) {
-                    const esAdmin = (limpio === CORREO_ADMIN || limpio === USUARIO_ADMIN_CORTO);
-                    contUsr.innerHTML = `
+            const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
+            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
+            const contenedorUsuario = document.getElementById("contenedor-usuario-header");
+
+            if (contenedorUsuario) {
+                if (usuarioLimpio) {
+                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
+                    
+                    contenedorUsuario.innerHTML = `
                         <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm whitespace-nowrap">
                             <i class="fa-solid fa-user mr-1.5 sm:mr-2 text-[#7A1C32]"></i>
-                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${esc(original)}</span>
+                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${usuarioLogueadoOriginal}</span>
                             <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                         </button>
                         <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
-                            <div class="px-4 py-3 text-xs text-gray-500">Sesión iniciada como<br><strong class="text-gray-800 truncate block">${esc(original)}</strong></div>
+                            <div class="px-4 py-3 text-xs text-gray-500">
+                                Sesión iniciada como<br>
+                                <strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong>
+                            </div>
                             ${esAdmin ? `
-                                <div class="py-1"><a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-gears mr-2"></i> Panel Administrador</a></div>
+                                <div class="py-1">
+                                    <a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-gears mr-2"></i> Panel Administrador
+                                    </a>
+                                </div>
                             ` : `
-                                <div class="py-1"><a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos</a></div>
+                                <div class="py-1">
+                                    <a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors">
+                                        <i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos
+                                    </a>
+                                </div>
                             `}
-                            <div class="pt-1"><button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer"><i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión</button></div>
-                        </div>`;
+                            <div class="pt-1">
+                                <button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 } else {
-                    contUsr.innerHTML = `
+                    contenedorUsuario.innerHTML = `
                         <a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center shadow-sm whitespace-nowrap">
                             <i class="fa-solid fa-user text-[#7A1C32] mr-1.5 sm:mr-2"></i> <span>Ingresar</span>
-                        </a>`;
+                        </a>
+                    `;
                 }
             }
 
-            refrescarContadorCarrito();
+            if (usuarioLimpio) {
+                const inputCorreo = document.getElementById("envio-correo");
+                const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
+                if (inputCorreo && !esAdmin) inputCorreo.value = usuarioLogueadoOriginal;
 
-            // Esperar el inventario (máx. ~15 s)
-            let intentos = 0;
-            const espera = setInterval(() => {
-                intentos++;
-                if (!inventarioListo()) {
-                    if (intentos > 300) {
-                        clearInterval(espera);
-                        document.getElementById("catalog-full-grid").innerHTML =
-                            `<div class="col-span-full text-center text-gray-400 py-16 text-sm font-semibold">No se pudo cargar el inventario.</div>`;
-                        document.getElementById("categoria-titulo").textContent = "Categorías";
-                    }
-                    return;
+                let datosGuardados = JSON.parse(localStorage.getItem("glow_envio_" + usuarioLimpio));
+                if (datosGuardados) {
+                    document.getElementById("envio-nombre").value = datosGuardados.nombre || "";
+                    document.getElementById("envio-telefono").value = datosGuardados.telefono || "";
+                    setTimeout(() => {
+                        if (datosGuardados.depto) {
+                            document.getElementById("envio-depto").value = datosGuardados.depto;
+                            window.cargarMunicipiosDesdeCSV();
+                            document.getElementById("envio-ciudad").value = datosGuardados.ciudad || "";
+                        }
+                    }, 500);
+                    document.getElementById("envio-direccion").value = datosGuardados.direccion || "";
+                    document.getElementById("envio-cp").value = datosGuardados.cp || "";
+                    document.getElementById("envio-especificaciones").value = datosGuardados.especificaciones || "";
+                    document.getElementById("envio-observaciones").value = datosGuardados.observaciones || "";
+                    
+                    const checkGuardar = document.getElementById("check-guardar-datos");
+                    if (checkGuardar) checkGuardar.checked = true;
                 }
-                clearInterval(espera);
-
-                construirCategorias();
-                const param = new URLSearchParams(window.location.search).get("cat");
-                const keyParam = normCat(param ? decodeURIComponent(param) : "");
-                const cat = categorias.find(c => c.key === keyParam && c.disponible) || categorias.find(c => c.disponible);
-                if (cat) mostrarCategoria(cat.key, false);
-            }, 50);
+            }
+            
+            cargarGeoDesdeCSV();
+            renderizarCarrito();
         });
-    })();
-    </script>
 
-    <!-- GENERADOR PDF -->
-    <script>
-    (function () {
-        "use strict";
+        function cargarGeoDesdeCSV() {
+            fetch("municipios_colombia_revisado_completo.csv")
+                .then(res => res.text())
+                .then(csvText => {
+                    const lines = csvText.split('\n');
+                    if (lines.length === 0) return;
 
-        const PDF_CEREZA = [122, 28, 50];
-        const PDF_DORADO = [212, 175, 55];
+                    const headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, '').replace(/^\ufeff/, '').toLowerCase());
+                    const deptoIndex = headers.findIndex(h => h.includes('departamento'));
+                    const munIndex = headers.findIndex(h => h.includes('municipio') || h.includes('ciudad'));
 
-        function normalizarCategoriaPDF(valor) {
-            if (typeof normalizarTexto === "function") return normalizarTexto(valor);
-            return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
-        }
+                    const idxDepto = deptoIndex !== -1 ? deptoIndex : 0;
+                    const idxMun = munIndex !== -1 ? munIndex : 1;
 
-        function cargarImagenComoDatosPDF(ruta) {
-            return new Promise(resolve => {
-                const imagen = new Image();
-                imagen.onload = function () {
-                    try {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = imagen.naturalWidth || imagen.width;
-                        canvas.height = imagen.naturalHeight || imagen.height;
-                        const contexto = canvas.getContext("2d");
-                        contexto.fillStyle = "#ffffff";
-                        contexto.fillRect(0, 0, canvas.width, canvas.height);
-                        contexto.drawImage(imagen, 0, 0);
-                        resolve({ datos: canvas.toDataURL("image/jpeg", 0.88), ancho: canvas.width, alto: canvas.height });
-                    } catch (error) {
-                        resolve(null);
+                    datosGeoColombia = {};
+
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        const currentLine = lines[i].split(';');
+                        let depto = currentLine[idxDepto] ? currentLine[idxDepto].trim().replace(/^"|"$/g, '') : '';
+                        let mun = currentLine[idxMun] ? currentLine[idxMun].trim().replace(/^"|"$/g, '') : '';
+
+                        if (depto && mun) {
+                            if (!datosGeoColombia[depto]) {
+                                datosGeoColombia[depto] = [];
+                            }
+                            if (!datosGeoColombia[depto].includes(mun)) {
+                                datosGeoColombia[depto].push(mun);
+                            }
+                        }
                     }
-                };
-                imagen.onerror = () => resolve(null);
-                imagen.src = ruta;
+
+                    const selectDepto = document.getElementById("envio-depto");
+                    if (selectDepto) {
+                        selectDepto.innerHTML = '<option value="">Seleccione un departamento...</option>';
+                        Object.keys(datosGeoColombia).sort().forEach(depto => {
+                            const option = document.createElement("option");
+                            option.value = depto;
+                            option.textContent = depto;
+                            selectDepto.appendChild(option);
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error("Error al cargar el CSV de municipios:", err);
+                    mostrarError("⚠️ No se pudo cargar el archivo 'municipios_colombia_revisado_completo.csv'.");
+                });
+        }
+
+        window.cargarMunicipiosDesdeCSV = function() {
+            const selectDepto = document.getElementById("envio-depto").value;
+            const selectCiudad = document.getElementById("envio-ciudad");
+            
+            selectCiudad.innerHTML = '<option value="">Seleccione una ciudad / municipio...</option>';
+
+            if (!selectDepto || !datosGeoColombia[selectDepto]) return;
+
+            const municipios = datosGeoColombia[selectDepto].sort();
+            municipios.forEach(mun => {
+                const option = document.createElement("option");
+                option.value = mun;
+                option.textContent = mun;
+                selectCiudad.appendChild(option);
             });
+        };
+
+        function convertirPrecioANumero(precioStr) {
+            if (!precioStr) return 0;
+            let limpio = String(precioStr).replace(/[^0-9]/g, "");
+            return parseFloat(limpio) || 0;
         }
 
-        async function buscarPortadaPDF(nombreBase) {
-            const extensiones = ["webp", "jpg", "jpeg", "png"];
-            const rutas = [];
-            extensiones.forEach(ext => {
-                rutas.push(nombreBase + "." + ext);
-                rutas.push("IMAGENES PRODUCTOS/" + nombreBase + "." + ext);
-                rutas.push("imagenes productos/" + nombreBase + "." + ext);
-            });
-            for (const ruta of rutas) {
-                const datos = await cargarImagenComoDatosPDF(ruta);
-                if (datos) return datos;
-            }
-            return null;
-        }
+        function renderizarCarrito() {
+            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            const contenedorLleno = document.getElementById("contenedor-carrito-lleno");
+            const contenedorVacio = document.getElementById("contenedor-carrito-vacio");
+            const listaItems = document.getElementById("lista-items-carrito");
+            const cartCount = document.getElementById("cart-count");
 
-        function dibujarImagenAjustada(doc, imagen, x, y, ancho, alto) {
-            if (!imagen || !imagen.datos) return;
-            const proporcion = Math.min(ancho / imagen.ancho, alto / imagen.alto);
-            const w = imagen.ancho * proporcion;
-            const h = imagen.alto * proporcion;
-            doc.addImage(imagen.datos, "JPEG", x + (ancho - w) / 2, y + (alto - h) / 2, w, h, undefined, "FAST");
-        }
+            const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+            if (cartCount) cartCount.textContent = totalItems;
 
-        function estadoPDF(mensaje) {
-            const texto = document.getElementById("texto-estado-pdf");
-            if (texto) texto.textContent = mensaje;
-        }
-
-        window.generarCatalogoPDF = async function () {
-            const boton = document.getElementById("btn-generar-catalogo-pdf");
-            const pantalla = document.getElementById("estado-generacion-pdf");
-            if (boton && boton.disabled) return;
-
-            if (typeof window.jspdf === "undefined") {
-                alert("No se pudo cargar la librería PDF.");
+            if (carrito.length === 0) {
+                contenedorLleno.classList.add("hidden");
+                contenedorVacio.classList.remove("hidden");
                 return;
             }
 
-            if (boton) boton.disabled = true;
-            if (pantalla) pantalla.classList.add("visible");
+            contenedorVacio.classList.add("hidden");
+            contenedorLleno.classList.remove("hidden");
+            listaItems.innerHTML = "";
 
-            try {
-                estadoPDF("Preparando productos...");
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-                const W = 210, H = 297, margen = 12, anchoUtil = W - margen * 2;
+            let subtotalGeneral = 0;
 
-                estadoPDF("Diseñando la portada...");
-                const portada = await buscarPortadaPDF("vistazo_inicial_glow");
-                doc.setFillColor(...PDF_CEREZA);
-                doc.rect(0, 0, W, H, "F");
-                doc.setDrawColor(...PDF_DORADO);
-                doc.setLineWidth(1.2);
-                doc.rect(7, 7, W - 14, H - 14);
+            carrito.forEach((item, index) => {
+                let precioNumerico = convertirPrecioANumero(item.precio);
+                let totalItem = precioNumerico * item.cantidad;
+                subtotalGeneral += totalItem;
 
-                if (portada) dibujarImagenAjustada(doc, portada, 18, 25, W - 36, 195);
+                const portada = item.imagenes && item.imagenes.length > 0 ? item.imagenes[0] : "";
 
-                doc.setTextColor(255, 255, 255);
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(27);
-                doc.text("GLOW & GO", W / 2, 240, { align: "center" });
-                doc.setDrawColor(...PDF_DORADO);
-                doc.setLineWidth(0.8);
-                doc.line(40, 249, 170, 249);
-                doc.setFontSize(13);
-                doc.setFont("helvetica", "normal");
-                doc.text("CATÁLOGO DE PRODUCTOS", W / 2, 261, { align: "center" });
-                doc.setFontSize(9);
-                doc.text("Tu mundo, en un solo lugar.", W / 2, 270, { align: "center" });
+                const cardItem = document.createElement("div");
+                cardItem.className = "bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-4";
+                
+                cardItem.innerHTML = `
+                    <div class="w-20 h-20 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 p-2">
+                        ${portada ? `<img src="${portada}" class="w-full h-full object-contain">` : `<i class="fa-solid fa-box text-gray-300"></i>`}
+                    </div>
+                    <div class="flex-grow">
+                        <span class="text-xs text-gray-400 font-semibold">${item.sku}</span>
+                        <h3 class="font-bold text-gray-900 text-sm line-clamp-1">${item.nombre}</h3>
+                        <span class="text-[#7A1C32] font-black text-sm">${item.precio}</span>
+                    </div>
+                    <div class="flex items-center space-x-2 border border-gray-200 rounded-xl px-2 py-1">
+                        <button onclick="cambiarCantidad(${index}, -1)" class="text-gray-500 hover:text-[#7A1C32] px-2 font-bold cursor-pointer">-</button>
+                        <span class="text-sm font-bold text-gray-800 w-6 text-center">${item.cantidad}</span>
+                        <button onclick="cambiarCantidad(${index}, 1)" class="text-gray-500 hover:text-[#7A1C32] px-2 font-bold cursor-pointer">+</button>
+                    </div>
+                    <button onclick="eliminarItem(${index})" class="text-gray-400 hover:text-red-500 p-2 transition-colors cursor-pointer">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                listaItems.appendChild(cardItem);
+            });
 
-                doc.addPage();
+            document.getElementById("resumen-subtotal").textContent = `$${subtotalGeneral.toLocaleString("es-CO")}`;
+            document.getElementById("resumen-total").textContent = `$${subtotalGeneral.toLocaleString("es-CO")}`;
+        }
 
-                const grupos = new Map();
-                if (typeof categoriasOficiales !== "undefined") {
-                    categoriasOficiales.forEach(cat => grupos.set(normalizarCategoriaPDF(cat.nombre), { nombre: cat.nombre, productos: [] }));
-                }
-                productosInventario.forEach(producto => {
-                    const nombreCategoria = String(producto.categoria || "GENERAL").trim().toUpperCase();
-                    const clave = normalizarCategoriaPDF(nombreCategoria);
-                    if (!grupos.has(clave)) grupos.set(clave, { nombre: nombreCategoria, productos: [] });
-                    grupos.get(clave).productos.push(producto);
-                });
-                const categoriasConProductos = Array.from(grupos.values()).filter(g => g.productos.length > 0);
-
-                const columnas = 3;
-                const separacionX = 4;
-                const anchoTarjeta = (anchoUtil - separacionX * (columnas - 1)) / columnas;
-                const altoTarjeta = 67;
-                const altoImagen = 38;
-                const inicioY = 37;
-                const limiteInferior = 278;
-                let y = inicioY;
-                let columna = 0;
-
-                function nuevaPaginaCatalogo() {
-                    doc.addPage();
-                    doc.setFillColor(255, 255, 255);
-                    doc.rect(0, 0, W, H, "F");
-                    doc.setTextColor(...PDF_CEREZA);
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(13);
-                    doc.text("GLOW & GO", margen, 14);
-                    doc.setTextColor(100, 90, 92);
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8);
-                    doc.text("CATÁLOGO DE PRODUCTOS", W - margen, 14, { align: "right" });
-                    doc.setDrawColor(...PDF_DORADO);
-                    doc.setLineWidth(0.7);
-                    doc.line(margen, 25, W - margen, 25);
-                    y = inicioY;
-                    columna = 0;
-                }
-
-                function dibujarTituloCategoria(nombre) {
-                    if (y + 12 > limiteInferior) nuevaPaginaCatalogo();
-                    doc.setFillColor(...PDF_CEREZA);
-                    doc.roundedRect(margen, y, anchoUtil, 9, 2, 2, "F");
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(10);
-                    doc.text(String(nombre).toUpperCase().slice(0, 55), margen + 4, y + 6);
-                    y += 12;
-                    columna = 0;
-                }
-
-                let totalProductos = 0;
-                for (const grupo of categoriasConProductos) {
-                    estadoPDF("Organizando " + grupo.nombre + "...");
-                    if (columna !== 0) { columna = 0; y += altoTarjeta + 4; }
-                    if (y + 12 > limiteInferior) nuevaPaginaCatalogo();
-                    dibujarTituloCategoria(grupo.nombre);
-
-                    for (const producto of grupo.productos) {
-                        if (y + altoTarjeta > limiteInferior) {
-                            nuevaPaginaCatalogo();
-                            dibujarTituloCategoria(grupo.nombre);
-                        }
-
-                        const x = margen + columna * (anchoTarjeta + separacionX);
-                        doc.setDrawColor(232, 224, 226);
-                        doc.setLineWidth(0.3);
-                        doc.roundedRect(x, y, anchoTarjeta, altoTarjeta, 2, 2, "S");
-
-                        let imagenProducto = null;
-                        const rutasImagen = Array.isArray(producto.imagenes) ? producto.imagenes : [];
-                        for (const ruta of rutasImagen) {
-                            if (!ruta) continue;
-                            imagenProducto = await cargarImagenComoDatosPDF(ruta);
-                            if (imagenProducto) break;
-                        }
-
-                        if (imagenProducto) {
-                            dibujarImagenAjustada(doc, imagenProducto, x + 3, y + 3, anchoTarjeta - 6, altoImagen);
-                        } else {
-                            doc.setFillColor(248, 246, 246);
-                            doc.rect(x + 3, y + 3, anchoTarjeta - 6, altoImagen, "F");
-                        }
-
-                        doc.setTextColor(45, 35, 38);
-                        doc.setFont("helvetica", "bold");
-                        doc.setFontSize(7.5);
-                        const nombreProducto = String(producto.nombre || "Sin nombre");
-                        const lineasNombre = doc.splitTextToSize(nombreProducto, anchoTarjeta - 6).slice(0, 2);
-                        const yNombre = y + altoImagen + 8;
-                        doc.text(lineasNombre, x + 3, yNombre);
-
-                        const yPrecio = yNombre + lineasNombre.length * 3.3 + 3;
-                        doc.setTextColor(...PDF_CEREZA);
-                        doc.setFont("helvetica", "bold");
-                        doc.setFontSize(9);
-                        doc.text(String(producto.precioStr || producto.precio || "Precio no disponible"), x + 3, yPrecio);
-
-                        columna++;
-                        totalProductos++;
-                        if (columna >= columnas) { columna = 0; y += altoTarjeta + 4; }
-                    }
-                    if (columna !== 0) { columna = 0; y += altoTarjeta + 4; }
-                    y += 2;
-                }
-
-                estadoPDF("Finalizando y descargando PDF...");
-                const totalPaginas = doc.internal.getNumberOfPages();
-                for (let pagina = 2; pagina <= totalPaginas; pagina++) {
-                    doc.setPage(pagina);
-                    doc.setDrawColor(...PDF_DORADO);
-                    doc.setLineWidth(0.4);
-                    doc.line(margen, 285, W - margen, 285);
-                    doc.setTextColor(110, 110, 110);
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8);
-                    doc.text("Glow & Go", margen, 290);
-                    doc.text("Página " + (pagina - 1) + " de " + (totalPaginas - 1), W - margen, 290, { align: "right" });
-                }
-
-                doc.save("Catalogo_Glow_and_Go.pdf");
-                estadoPDF("¡Catálogo generado!");
-                await new Promise(resolve => setTimeout(resolve, 900));
-            } catch (error) {
-                alert("No se pudo generar el catálogo PDF.");
-            } finally {
-                if (pantalla) pantalla.classList.remove("visible");
-                if (boton) boton.disabled = false;
+        window.cambiarCantidad = function(index, cambio) {
+            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            carrito[index].cantidad += cambio;
+            if (carrito[index].cantidad <= 0) {
+                carrito.splice(index, 1);
             }
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            renderizarCarrito();
         };
-    })();
+
+        window.eliminarItem = function(index) {
+            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            carrito.splice(index, 1);
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            renderizarCarrito();
+        };
+
+        function validarFormularioEnvio() {
+            const nombre = document.getElementById("envio-nombre").value.trim();
+            const correo = document.getElementById("envio-correo").value.trim();
+            const telefono = document.getElementById("envio-telefono").value.trim();
+            const depto = document.getElementById("envio-depto").value;
+            const ciudad = document.getElementById("envio-ciudad").value;
+            const direccion = document.getElementById("envio-direccion").value.trim();
+
+            if (!nombre || !correo || !telefono || !depto || !ciudad || !direccion) {
+                mostrarError("⚠️ Por favor completa los campos obligatorios de envío (Nombre, Correo, Teléfono, Departamento, Ciudad y Dirección).");
+                return false;
+            }
+            return true;
+        }
+
+        window.finalizarCompraWhatsApp = function() {
+            document.getElementById("mensaje-error-carrito").classList.add("hidden");
+            if (!validarFormularioEnvio()) return;
+
+            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+            if (carrito.length === 0) return;
+
+            const nombre = document.getElementById("envio-nombre").value.trim();
+            const correo = document.getElementById("envio-correo").value.trim();
+            const telefono = document.getElementById("envio-telefono").value.trim();
+            const depto = document.getElementById("envio-depto").value;
+            const ciudad = document.getElementById("envio-ciudad").value;
+            const direccion = document.getElementById("envio-direccion").value.trim();
+            const cp = document.getElementById("envio-cp").value.trim();
+            const especificaciones = document.getElementById("envio-especificaciones").value.trim();
+            const observaciones = document.getElementById("envio-observaciones").value.trim();
+
+            const checkGuardar = document.getElementById("check-guardar-datos");
+            const usuarioLogueado = (localStorage.getItem("usuarioLogueado") || correo).toLowerCase().trim();
+            
+            if (checkGuardar && checkGuardar.checked) {
+                const datosEnvio = { nombre, correo, telefono, depto, ciudad, direccion, cp, especificaciones, observaciones };
+                localStorage.setItem("glow_envio_" + usuarioLogueado, JSON.stringify(datosEnvio));
+            }
+
+            let totalProductos = 0;
+            carrito.forEach(item => {
+                totalProductos += convertirPrecioANumero(item.precio) * item.cantidad;
+            });
+
+            let pedidos = JSON.parse(localStorage.getItem("glow_pedidos")) || [];
+            const numeroPedidoConsecutivo = 1000 + pedidos.length + 1;
+
+            const nuevoPedido = {
+                id: numeroPedidoConsecutivo,
+                usuario: correo,
+                nombreCliente: nombre,
+                telefonoCliente: telefono,
+                ubicacion: `${ciudad}, ${depto}`,
+                direccion: direccion,
+                especificaciones: especificaciones || 'No especificada',
+                observaciones: observaciones || 'Ninguna',
+                items: [...carrito],
+                total: totalProductos,
+                estado: "Pendiente a confirmación",
+                guia: "",
+                fecha: new Date().toLocaleString()
+            };
+
+            pedidos.push(nuevoPedido);
+            localStorage.setItem("glow_pedidos", JSON.stringify(pedidos));
+
+            let mensaje = `Glow & Go - Mi pedido\n\nTu pedido ya se encuentra registrado pendiente a confirmación.\n\n*Datos del Cliente:*\n- Nombre: ${nombre}\n- Teléfono: ${telefono}\n- Correo: ${correo}\n- Destino: ${ciudad}, ${depto}\n- Dirección: ${direccion}\n- Espec. vivienda: ${especificaciones || 'Ninguna'}\n- Obs: ${observaciones || 'Ninguna'}\n\n*Productos solicitados:*\n`;
+
+            carrito.forEach(item => {
+                let precioUnitarioNum = convertirPrecioANumero(item.precio);
+                let totalItem = precioUnitarioNum * item.cantidad;
+                mensaje += `• ${item.nombre} (SKU: ${item.sku}) | Cant: ${item.cantidad} | P. Unit: $${precioUnitarioNum.toLocaleString("es-CO")} | Total: $${totalItem.toLocaleString("es-CO")}\n`;
+            });
+
+            mensaje += `\n*Total a pagar (Productos):* $${totalProductos.toLocaleString("es-CO")}\n\n*A la espera de confirmación de precio de envío, suministrímeme medios de pago para finalizar mi compra.*`;
+
+            localStorage.removeItem("carrito");
+
+            const numeroWhatsApp = "3107027780";
+            const url = `https://wa.me/57${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, "_blank");
+
+            window.location.href = "mis-pedidos.html";
+        };
     </script>
 </body>
 </html>
-
