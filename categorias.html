@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="es">
 <head>
     <link rel="icon" type="image/png" href="./favicon.png">
@@ -38,18 +38,40 @@
 
         body { padding-top: 96px; }
 
-        #modal-detalle {
-            z-index: 100000 !important;
-        }
+        #modal-detalle { z-index: 100000 !important; }
 
         .zoom-container {
             position: relative;
             overflow: hidden;
             cursor: zoom-in;
         }
-        .zoom-container img {
-            transition: transform 0.3s ease;
+        .zoom-container img { transition: transform 0.3s ease; }
+
+        /* Transiciones suaves al cambiar de categoría */
+        #catalog-full-grid { transition: opacity 0.18s ease; }
+        #catalog-full-grid.desvanecer { opacity: 0; }
+        #categoria-titulo { transition: opacity 0.18s ease; }
+        #categoria-titulo.desvanecer { opacity: 0; }
+
+        /* Aviso al añadir al carrito */
+        #toast-carrito {
+            position: fixed;
+            left: 50%;
+            bottom: 28px;
+            transform: translate(-50%, 20px);
+            z-index: 300000;
+            background: #7A1C32;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s ease, transform .25s ease;
         }
+        #toast-carrito.visible { opacity: 1; transform: translate(-50%, 0); }
 
         /* Ventana de espera del generador PDF */
         #estado-generacion-pdf {
@@ -87,9 +109,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
-   <!-- ========================================== -->
    <!-- HEADER / NAVEGACIÓN PRINCIPAL -->
-   <!-- ========================================== -->
    <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
            <div class="flex items-center space-x-3 flex-shrink-0">
@@ -115,7 +135,6 @@
                        <i class="fa-solid fa-magnifying-glass text-[#7A1C32] mr-2 text-xs sm:text-sm"></i>
                        <input type="text" id="input-buscador" placeholder="Buscar productos..." oninput="buscarProductosTiempoReal(this.value)" class="bg-transparent text-xs sm:text-sm text-gray-800 focus:outline-none w-full placeholder-gray-500 font-medium">
                    </div>
-                   <!-- 🔍 CONTENEDOR DE BÚSQUEDA FLOTANTE -->
                    <div id="dropdown-busqueda" class="hidden absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-[999999] p-2 divide-y divide-gray-50"></div>
                </div>
                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
@@ -131,9 +150,8 @@
         <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-8 text-center relative overflow-hidden">
             <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
             <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
-            <h1 id="categoria-titulo" class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">Categoría: Seleccionada</h1>
+            <h1 id="categoria-titulo" class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">Cargando...</h1>
 
-            <!-- BOTÓN: GENERAR CATÁLOGO PDF -->
             <button id="btn-generar-catalogo-pdf" type="button" onclick="generarCatalogoPDF()" class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-extrabold text-[#7A1C32] shadow-lg transition-all hover:bg-amber-50 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-wait">
                 <i class="fa-solid fa-file-pdf"></i>
                 <span>Generar catálogo PDF</span>
@@ -157,7 +175,11 @@
 
             <div class="lg:col-span-3">
                 <section>
-                    <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 transition-opacity duration-300"></div>
+                    <div id="catalog-full-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <div class="col-span-full text-center text-gray-400 py-16 text-sm font-semibold">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando productos...
+                        </div>
+                    </div>
                 </section>
             </div>
         </div>
@@ -191,7 +213,7 @@
         </div>
     </div>
 
-    <!-- 📌 MODAL DE DETALLE IDÉNTICO AL INDEX -->
+    <!-- MODAL DE DETALLE -->
     <div id="modal-detalle" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-3xl w-full p-6 lg:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
             <button onclick="cerrarModalDetalle()" aria-label="Cerrar detalle" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer z-10">
@@ -201,121 +223,136 @@
         </div>
     </div>
 
+    <div id="toast-carrito" role="status" aria-live="polite"></div>
+
     <!-- SCRIPT PRINCIPAL EXISTENTE -->
     <script src="js/app.js"></script>
 
     <script>
+    (function () {
+        "use strict";
+
         const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
         const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
 
-        function toggleMenuUsuario() {
-            const dropdown = document.getElementById("dropdown-usuario");
-            if (dropdown) dropdown.classList.toggle("hidden");
+        /* ---------- Utilidades ---------- */
+        function normCat(v) {
+            return String(v || "")
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9]+/g, " ")
+                .trim().toUpperCase();
+        }
+        function esc(s) {
+            return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+        function inventarioListo() {
+            return typeof productosInventario !== "undefined" && Array.isArray(productosInventario) && productosInventario.length > 0;
         }
 
-        function cerrarSesionUsuario() {
+        /* ---------- Usuario ---------- */
+        window.toggleMenuUsuario = function () {
+            const d = document.getElementById("dropdown-usuario");
+            if (d) d.classList.toggle("hidden");
+        };
+        window.cerrarSesionUsuario = function () {
             localStorage.removeItem("usuarioLogueado");
             localStorage.removeItem("tokenUsuario");
             window.location.reload();
-        }
+        };
+        window.toggleMenuCategoriasHeader = function () {
+            const d = document.getElementById("dropdown-categorias-header");
+            if (d) d.classList.toggle("hidden");
+        };
 
-        window.addEventListener("click", function(e) {
+        window.addEventListener("click", function (e) {
             const dropdownUsr = document.getElementById("dropdown-usuario");
             const btnUsr = document.getElementById("btn-usuario-activo");
-            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) {
-                dropdownUsr.classList.add("hidden");
-            }
+            if (dropdownUsr && btnUsr && !btnUsr.contains(e.target) && !dropdownUsr.contains(e.target)) dropdownUsr.classList.add("hidden");
+
             const dropdownBusqueda = document.getElementById("dropdown-busqueda");
             const inputBuscador = document.getElementById("input-buscador");
-            if (dropdownBusqueda && inputBuscador && !inputBuscador.contains(e.target) && !dropdownBusqueda.contains(e.target)) {
-                dropdownBusqueda.classList.add("hidden");
-            }
+            if (dropdownBusqueda && inputBuscador && !inputBuscador.contains(e.target) && !dropdownBusqueda.contains(e.target)) dropdownBusqueda.classList.add("hidden");
+
+            const dropCat = document.getElementById("dropdown-categorias-header");
+            if (dropCat && !dropCat.classList.contains("hidden") && !dropCat.contains(e.target) && !e.target.closest("[onclick*='toggleMenuCategoriasHeader']")) dropCat.classList.add("hidden");
         });
 
-        // 🔍 BÚSQUEDA INTELIGENTE EN TIEMPO REAL IDÉNTICA AL INDEX
-        window.buscarProductosTiempoReal = function(texto) {
-            const dropdown = document.getElementById("dropdown-busqueda");
-            if (!dropdown) return;
-            const query = texto.toLowerCase().trim();
-
-            if (!query || query.length < 2) {
-                dropdown.classList.add("hidden");
-                dropdown.innerHTML = "";
-                return;
+        /* ---------- Carrito ---------- */
+        function leerCarrito() {
+            try { const c = JSON.parse(localStorage.getItem("carrito")); return Array.isArray(c) ? c : []; }
+            catch (e) { return []; }
+        }
+        function refrescarContadorCarrito() {
+            const total = leerCarrito().reduce((s, i) => s + (parseInt(i.cantidad, 10) || 1), 0);
+            const el = document.getElementById("cart-count");
+            if (el) el.textContent = total;
+            if (typeof actualizarContadorCarrito === "function") {
+                try { actualizarContadorCarrito(); } catch (e) {}
             }
-
-            if (typeof productosInventario === "undefined" || !productosInventario.length) {
-                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">Cargando inventario...</div>`;
-                dropdown.classList.remove("hidden");
-                return;
-            }
-
-            const palabrasBusqueda = query.split(/\s+/).filter(Boolean);
-
-            const resultados = productosInventario.filter(p => {
-                const nombreLower = (p.nombre || "").toLowerCase();
-                const categoriaLower = (p.categoria || "").toLowerCase();
-                const skuLower = (p.sku || "").toLowerCase();
-                const palabrasNombre = nombreLower.split(/\s+/);
-
-                return palabrasBusqueda.every(palabraQuery => {
-                    const coincideNombre = palabrasNombre.some(pNombre => pNombre.startsWith(palabraQuery));
-                    const coincideCategoria = categoriaLower.startsWith(palabraQuery);
-                    const coincideSku = skuLower.startsWith(palabraQuery);
-                    return coincideNombre || coincideCategoria || coincideSku;
+        }
+        let toastTimer;
+        function mostrarAviso(msg) {
+            const t = document.getElementById("toast-carrito");
+            if (!t) return;
+            t.innerHTML = '<i class="fa-solid fa-check mr-2"></i>' + esc(msg);
+            t.classList.add("visible");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove("visible"), 1800);
+        }
+        function anadirAlCarritoGlow(producto, cantidad) {
+            if (!producto) return false;
+            cantidad = Math.max(1, parseInt(cantidad, 10) || 1);
+            const carrito = leerCarrito();
+            const existente = carrito.find(i => (i.sku && producto.sku && i.sku === producto.sku) || i.nombre === producto.nombre);
+            if (existente) {
+                existente.cantidad = (parseInt(existente.cantidad, 10) || 0) + cantidad;
+            } else {
+                carrito.push({
+                    sku: producto.sku,
+                    nombre: producto.nombre,
+                    precio: producto.precioStr || producto.precio,
+                    precioStr: producto.precioStr || producto.precio,
+                    precioNum: producto.precioNum,
+                    imagenes: producto.imagenes,
+                    categoria: producto.categoria,
+                    cantidad: cantidad
                 });
-            }).slice(0, 6);
-
-            if (resultados.length === 0) {
-                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>`;
-                dropdown.classList.remove("hidden");
-                return;
             }
+            try { localStorage.setItem("carrito", JSON.stringify(carrito)); }
+            catch (e) { mostrarAviso("No se pudo guardar el carrito"); return false; }
+            refrescarContadorCarrito();
+            mostrarAviso("Añadido al carrito");
+            return true;
+        }
 
-            dropdown.innerHTML = resultados.map(p => {
-                const indexReal = productosInventario.findIndex(item => (item.sku && item.sku === p.sku) || item.nombre === p.nombre);
-                const imgProd = p.imagenes && p.imagenes[0] ? p.imagenes[0] : 'logo_glow.jpg';
-                return `
-                    <div onclick="seleccionarProductoDesdeBusquedaCategorias(${indexReal})" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
-                        <img src="${imgProd}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
-                        <div class="flex-grow min-w-0">
-                            <h4 class="text-xs font-bold text-gray-800 truncate">${p.nombre}</h4>
-                            <span class="text-[10px] text-[#7A1C32] font-semibold">${p.precioStr || p.precio || '$0'}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            dropdown.classList.remove("hidden");
+        /* ---------- Modal de detalle ---------- */
+        window.cerrarModalDetalle = function () {
+            document.getElementById("modal-detalle").classList.add("hidden");
         };
+        document.addEventListener("keydown", e => { if (e.key === "Escape") window.cerrarModalDetalle(); });
+        document.getElementById("modal-detalle").addEventListener("click", e => {
+            if (e.target.id === "modal-detalle") window.cerrarModalDetalle();
+        });
 
-        window.seleccionarProductoDesdeBusquedaCategorias = function(indiceReal) {
-            const dropdown = document.getElementById("dropdown-busqueda");
-            if (dropdown) dropdown.classList.add("hidden");
-            
-            if (indiceReal !== -1 && typeof productosInventario !== "undefined" && productosInventario[indiceReal]) {
-                abrirDetalleProductoDirectoIndex(productosInventario[indiceReal]);
-            }
-        };
-
-        window.abrirDetalleProductoDirectoIndex = function(producto) {
+        function abrirDetalle(producto) {
             if (!producto) return;
             const modal = document.getElementById("modal-detalle");
             const contenido = document.getElementById("modal-contenido");
             const imgs = producto.imagenes && producto.imagenes.length ? producto.imagenes : ["logo_glow.jpg"];
-            let imagenActualIndex = 0;
+            let actual = 0;
 
-            function actualizarVistaModalDirecto() {
+            function pintar() {
                 contenido.innerHTML = `
                     <div class="flex flex-col items-center">
                         <div class="w-full bg-gray-50 rounded-2xl flex items-center justify-center p-4 h-60 sm:h-80 zoom-container mb-3" id="zoom-box">
-                            <img id="imagen-principal-modal" src="${imgs[imagenActualIndex]}" class="w-full h-full object-contain pointer-events-none" onerror="this.src='logo_glow.jpg';">
+                            <img id="imagen-principal-modal" src="${esc(imgs[actual])}" class="w-full h-full object-contain pointer-events-none" onerror="this.src='logo_glow.jpg';">
                         </div>
                         <p class="text-[11px] text-gray-400 italic mb-3"><i class="fa-solid fa-magnifying-glass mr-1"></i> Toca o pasa el cursor para zoom</p>
                         ${imgs.length > 1 ? `
                             <div class="flex items-center gap-2 overflow-x-auto w-full py-1">
                                 ${imgs.map((img, i) => `
-                                    <button type="button" onclick="cambiarImagenModalDirectoIndex(${i}, ${JSON.stringify(imgs).replace(/"/g, '&quot;')})" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 overflow-hidden bg-white p-1 flex-shrink-0 ${i === imagenActualIndex ? 'border-[#7A1C32]' : 'border-gray-200 opacity-70'}">
-                                        <img src="${img}" class="w-full h-full object-contain">
+                                    <button type="button" data-miniatura="${i}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 overflow-hidden bg-white p-1 flex-shrink-0 ${i === actual ? 'border-[#7A1C32]' : 'border-gray-200 opacity-70'}">
+                                        <img src="${esc(img)}" class="w-full h-full object-contain" onerror="this.src='logo_glow.jpg';">
                                     </button>
                                 `).join('')}
                             </div>
@@ -323,10 +360,10 @@
                     </div>
                     <div class="flex flex-col justify-between">
                         <div>
-                            <span class="text-xs font-bold text-gray-400 uppercase">${producto.sku || ''}</span>
-                            <h2 class="text-lg sm:text-xl font-black text-gray-900 mt-1">${producto.nombre}</h2>
-                            <p class="text-base sm:text-lg font-black text-[#7A1C32] mt-2">${producto.precioStr || producto.precio || ''}</p>
-                            <p class="text-xs sm:text-sm text-gray-600 mt-4 leading-relaxed">${producto.descripcion || producto.especificaciones || ''}</p>
+                            <span class="text-xs font-bold text-gray-400 uppercase">${esc(producto.sku || '')}</span>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 mt-1">${esc(producto.nombre)}</h2>
+                            <p class="text-base sm:text-lg font-black text-[#7A1C32] mt-2">${esc(producto.precioStr || producto.precio || '')}</p>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-4 leading-relaxed">${esc(producto.descripcion || producto.especificaciones || '')}</p>
                         </div>
                         <div class="mt-6">
                             <label class="block text-xs font-semibold text-gray-700 mb-2">Cantidad</label>
@@ -340,164 +377,312 @@
 
                 const zoomBox = document.getElementById("zoom-box");
                 const imgModal = document.getElementById("imagen-principal-modal");
-                if (zoomBox && imgModal) {
-                    zoomBox.addEventListener("mousemove", (e) => {
-                        const rect = zoomBox.getBoundingClientRect();
-                        const x = ((e.clientX - rect.left) / rect.width) * 100;
-                        const y = ((e.clientY - rect.top) / rect.height) * 100;
-                        imgModal.style.transformOrigin = `${x}% ${y}%`;
-                        imgModal.style.transform = "scale(2.2)";
-                    });
-                    zoomBox.addEventListener("mouseleave", () => {
-                        imgModal.style.transformOrigin = "center center";
-                        imgModal.style.transform = "scale(1)";
-                    });
-                }
+                zoomBox.addEventListener("mousemove", e => {
+                    const r = zoomBox.getBoundingClientRect();
+                    imgModal.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
+                    imgModal.style.transform = "scale(2.2)";
+                });
+                zoomBox.addEventListener("mouseleave", () => {
+                    imgModal.style.transformOrigin = "center center";
+                    imgModal.style.transform = "scale(1)";
+                });
+
+                contenido.querySelectorAll("[data-miniatura]").forEach(b => {
+                    b.addEventListener("click", () => { actual = parseInt(b.dataset.miniatura, 10); pintar(); });
+                });
 
                 document.getElementById("btn-agregar-carrito-directo").addEventListener("click", () => {
-                    const cantidad = Math.max(1, parseInt(document.getElementById("cantidad-producto").value, 10) || 1);
-                    agregarAlCarritoGlobal(producto, cantidad);
+                    const cant = document.getElementById("cantidad-producto").value;
+                    if (anadirAlCarritoGlow(producto, cant)) window.cerrarModalDetalle();
                 });
             }
 
-            window.cambiarImagenModalDirectoIndex = function(index, listaImgs) {
-                imagenActualIndex = index;
-                imgs.splice(0, imgs.length, ...listaImgs);
-                actualizarVistaModalDirecto();
+            pintar();
+            modal.classList.remove("hidden");
+        }
+        window.abrirDetalleProductoDirectoIndex = abrirDetalle;
+
+        /* ---------- Buscador ---------- */
+        window.buscarProductosTiempoReal = function (texto) {
+            const dropdown = document.getElementById("dropdown-busqueda");
+            if (!dropdown) return;
+            const query = String(texto || "").toLowerCase().trim();
+
+            if (!query || query.length < 2) {
+                dropdown.classList.add("hidden");
+                dropdown.innerHTML = "";
+                return;
+            }
+            if (!inventarioListo()) {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">Cargando inventario...</div>`;
+                dropdown.classList.remove("hidden");
+                return;
+            }
+
+            const palabras = query.split(/\s+/).filter(Boolean);
+            const resultados = productosInventario.filter(p => {
+                const nombre = (p.nombre || "").toLowerCase();
+                const categoria = (p.categoria || "").toLowerCase();
+                const sku = (p.sku || "").toLowerCase();
+                const palabrasNombre = nombre.split(/\s+/);
+                return palabras.every(q =>
+                    palabrasNombre.some(pn => pn.startsWith(q)) || categoria.startsWith(q) || sku.startsWith(q)
+                );
+            }).slice(0, 6);
+
+            if (resultados.length === 0) {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>`;
+                dropdown.classList.remove("hidden");
+                return;
+            }
+
+            dropdown.innerHTML = resultados.map(p => {
+                const idx = productosInventario.indexOf(p);
+                const img = p.imagenes && p.imagenes[0] ? p.imagenes[0] : "logo_glow.jpg";
+                return `
+                    <div data-resultado="${idx}" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                        <img src="${esc(img)}" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0" onerror="this.src='logo_glow.jpg'">
+                        <div class="flex-grow min-w-0">
+                            <h4 class="text-xs font-bold text-gray-800 truncate">${esc(p.nombre)}</h4>
+                            <span class="text-[10px] text-[#7A1C32] font-semibold">${esc(p.precioStr || p.precio || '$0')}</span>
+                        </div>
+                    </div>`;
+            }).join("");
+            dropdown.classList.remove("hidden");
+        };
+
+        document.getElementById("dropdown-busqueda").addEventListener("click", e => {
+            const fila = e.target.closest("[data-resultado]");
+            if (!fila) return;
+            const p = productosInventario[parseInt(fila.dataset.resultado, 10)];
+            document.getElementById("dropdown-busqueda").classList.add("hidden");
+            abrirDetalle(p);
+        });
+
+        /* ---------- Categorías ---------- */
+        let categorias = [];      // [{ key, nombre, disponible }]
+        let categoriaActivaKey = "";
+
+        function construirCategorias() {
+            const mapa = new Map();
+            const keysCsv = new Set(productosInventario.map(p => normCat(p.categoria)));
+
+            if (typeof categoriasOficiales !== "undefined" && Array.isArray(categoriasOficiales)) {
+                categoriasOficiales.forEach(c => {
+                    const key = normCat(c.nombre);
+                    if (!key || mapa.has(key)) return;
+                    mapa.set(key, { key, nombre: c.nombre, disponible: keysCsv.has(key) });
+                });
+            }
+            // Categorías del inventario que no estén en la lista oficial: también disponibles
+            productosInventario.forEach(p => {
+                const key = normCat(p.categoria);
+                if (!key || mapa.has(key)) return;
+                mapa.set(key, { key, nombre: String(p.categoria).trim().toUpperCase(), disponible: true });
+            });
+            categorias = Array.from(mapa.values());
+        }
+
+        function htmlLateral() {
+            return categorias.map(cat => {
+                const activo = cat.key === categoriaActivaKey;
+                if (cat.disponible) {
+                    return `
+                        <a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" data-cat="${esc(cat.key)}" class="enlace-cat flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase transition-all ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
+                            <span>${esc(cat.nombre)}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full ${activo ? 'bg-white text-[#7A1C32]' : 'bg-green-100 text-green-700'} font-extrabold">Disponible</span>
+                        </a>`;
+                }
+                return `
+                    <div class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase bg-gray-50 text-gray-400 opacity-60">
+                        <span>${esc(cat.nombre)}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-extrabold">Próximamente</span>
+                    </div>`;
+            }).join("");
+        }
+
+        function htmlMovil() {
+            return categorias.map(cat => {
+                const activo = cat.key === categoriaActivaKey;
+                if (cat.disponible) {
+                    return `<a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" data-cat="${esc(cat.key)}" class="enlace-cat flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}">${esc(cat.nombre)}</a>`;
+                }
+                return `<span class="flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase whitespace-nowrap bg-gray-50 text-gray-400 opacity-60">${esc(cat.nombre)} · Próximamente</span>`;
+            }).join("");
+        }
+
+        function htmlHeader() {
+            return categorias.map(cat => {
+                if (cat.disponible) {
+                    return `<a href="categorias.html?cat=${encodeURIComponent(cat.nombre)}" data-cat="${esc(cat.key)}" class="enlace-cat block px-4 py-2.5 text-xs font-bold uppercase text-gray-700 hover:bg-[#7A1C32]/10 hover:text-[#7A1C32] rounded-xl transition-colors">${esc(cat.nombre)}</a>`;
+                }
+                return `<div class="flex items-center justify-between px-4 py-2.5 text-xs font-bold uppercase text-gray-400 opacity-60"><span>${esc(cat.nombre)}</span><span class="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Próximamente</span></div>`;
+            }).join("");
+        }
+
+        function pintarListas() {
+            const lat = document.getElementById("lista-categorias-lateral");
+            const mov = document.getElementById("lista-categorias-movil");
+            const hdr = document.getElementById("dropdown-categorias-header");
+            if (lat) lat.innerHTML = htmlLateral();
+            if (mov) mov.innerHTML = htmlMovil();
+            if (hdr) hdr.innerHTML = htmlHeader();
+            // Mantener visible la categoría activa en la barra móvil
+            const act = mov && mov.querySelector(".bg-\\[\\#7A1C32\\]");
+            if (act && act.scrollIntoView) act.scrollIntoView({ inline: "center", block: "nearest" });
+        }
+
+        function productosDeCategoria(key) {
+            return productosInventario.filter(p => normCat(p.categoria) === key);
+        }
+
+        function tarjetaProducto(p) {
+            const idx = productosInventario.indexOf(p);
+            const img = p.imagenes && p.imagenes[0] ? p.imagenes[0] : "logo_glow.jpg";
+            return `
+                <article class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                    <div data-ver="${idx}" class="cursor-pointer bg-gray-50 h-48 flex items-center justify-center p-3">
+                        <img src="${esc(img)}" alt="${esc(p.nombre)}" loading="lazy" class="w-full h-full object-contain" onerror="this.src='logo_glow.jpg'">
+                    </div>
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h3 data-ver="${idx}" class="text-sm font-bold text-gray-900 leading-snug cursor-pointer hover:text-[#7A1C32] line-clamp-2">${esc(p.nombre)}</h3>
+                        <p class="text-base font-black text-[#7A1C32] mt-1">${esc(p.precioStr || p.precio || '')}</p>
+                        <div class="mt-auto pt-3 flex gap-2">
+                            <button type="button" data-ver="${idx}" class="flex-1 border border-[#7A1C32] text-[#7A1C32] hover:bg-[#7A1C32]/10 font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer">Ver detalle</button>
+                            <button type="button" data-add="${idx}" class="flex-1 bg-[#7A1C32] hover:bg-[#621628] text-white font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center"><i class="fa-solid fa-cart-shopping mr-1.5"></i> Añadir</button>
+                        </div>
+                    </div>
+                </article>`;
+        }
+
+        function pintarProductos() {
+            const grid = document.getElementById("catalog-full-grid");
+            const lista = productosDeCategoria(categoriaActivaKey);
+            grid.innerHTML = lista.length
+                ? lista.map(tarjetaProducto).join("")
+                : `<div class="col-span-full text-center text-gray-400 py-16 text-sm font-semibold">No hay productos en esta categoría todavía.</div>`;
+        }
+
+        document.getElementById("catalog-full-grid").addEventListener("click", e => {
+            const btnAdd = e.target.closest("[data-add]");
+            if (btnAdd) {
+                e.stopPropagation();
+                anadirAlCarritoGlow(productosInventario[parseInt(btnAdd.dataset.add, 10)], 1);
+                return;
+            }
+            const ver = e.target.closest("[data-ver]");
+            if (ver) abrirDetalle(productosInventario[parseInt(ver.dataset.ver, 10)]);
+        });
+
+        let primeraCarga = true;
+        function mostrarCategoria(key, empujarHistorial) {
+            const cat = categorias.find(c => c.key === key && c.disponible);
+            if (!cat) return;
+            const titulo = document.getElementById("categoria-titulo");
+            const grid = document.getElementById("catalog-full-grid");
+
+            const aplicar = () => {
+                categoriaActivaKey = key;
+                titulo.textContent = "Categoría: " + cat.nombre;
+                pintarListas();
+                pintarProductos();
+                titulo.classList.remove("desvanecer");
+                grid.classList.remove("desvanecer");
             };
 
-            actualizarVistaModalDirecto();
-            modal.classList.remove("hidden");
-        };
-
-        window.cerrarModalDetalle = function() {
-            document.getElementById("modal-detalle").classList.add("hidden");
-        };
-
-        // FUNCIÓN UNIVERSAL PARA AGREGAR AL CARRITO
-        window.agregarAlCarritoGlobal = function(producto, cantidad = 1) {
-            let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-            const clave = String(producto.id ?? producto.sku ?? producto.nombre);
-            const existente = carrito.find(item => String(item.id ?? item.sku ?? item.nombre) === clave);
-
-            if (existente) {
-                existente.cantidad += cantidad;
-            } else {
-                carrito.push({
-                    id: producto.id || producto.sku,
-                    sku: producto.sku,
-                    nombre: producto.nombre,
-                    precio: producto.precioStr || producto.precio,
-                    precioNum: producto.precioNum || Number(String(producto.precioStr || producto.precio || "0").replace(/[^0-9]/g, '')) || 0,
-                    imagenes: producto.imagenes || [producto.imagen || 'logo_glow.jpg'],
-                    cantidad: cantidad
-                });
+            if (empujarHistorial) {
+                history.pushState({ cat: key }, "", "categorias.html?cat=" + encodeURIComponent(cat.nombre));
             }
 
-            localStorage.setItem("carrito", JSON.stringify(carrito));
-            if (typeof actualizarContadorCarrito === "function") {
-                actualizarContadorCarrito();
-            } else {
-                const badge = document.getElementById("cart-count");
-                if (badge) {
-                    badge.textContent = carrito.reduce((sum, item) => sum + (Number(item.cantidad) || 0), 0);
-                }
+            if (primeraCarga) {
+                primeraCarga = false;
+                aplicar();
+                return;
             }
-            cerrarModalDetalle();
-        };
+            titulo.classList.add("desvanecer");
+            grid.classList.add("desvanecer");
+            setTimeout(aplicar, 180);
+        }
 
+        // Cambio de categoría sin recargar la página (sin parpadeo)
+        document.addEventListener("click", e => {
+            const enlace = e.target.closest("a.enlace-cat");
+            if (!enlace) return;
+            e.preventDefault();
+            const dropCat = document.getElementById("dropdown-categorias-header");
+            if (dropCat) dropCat.classList.add("hidden");
+            const key = enlace.dataset.cat;
+            if (key && key !== categoriaActivaKey) {
+                mostrarCategoria(key, true);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        });
+
+        window.addEventListener("popstate", () => {
+            if (!categorias.length) return;
+            const param = new URLSearchParams(window.location.search).get("cat");
+            const key = normCat(param ? decodeURIComponent(param) : "");
+            const cat = categorias.find(c => c.key === key && c.disponible) || categorias.find(c => c.disponible);
+            if (cat) mostrarCategoria(cat.key, false);
+        });
+
+        /* ---------- Inicio ---------- */
         document.addEventListener("DOMContentLoaded", () => {
-            const usuarioLogueadoOriginal = localStorage.getItem("usuarioLogueado") || "";
-            const usuarioLimpio = usuarioLogueadoOriginal.toLowerCase().trim();
-            const contenedorUsuario = document.getElementById("contenedor-usuario-header");
-
-            if (contenedorUsuario) {
-                if (usuarioLimpio) {
-                    const esAdmin = (usuarioLimpio === CORREO_ADMIN || usuarioLimpio === USUARIO_ADMIN_CORTO);
-                    contenedorUsuario.innerHTML = `
+            // Usuario
+            const original = localStorage.getItem("usuarioLogueado") || "";
+            const limpio = original.toLowerCase().trim();
+            const contUsr = document.getElementById("contenedor-usuario-header");
+            if (contUsr) {
+                if (limpio) {
+                    const esAdmin = (limpio === CORREO_ADMIN || limpio === USUARIO_ADMIN_CORTO);
+                    contUsr.innerHTML = `
                         <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center transition-colors cursor-pointer shadow-sm whitespace-nowrap">
                             <i class="fa-solid fa-user mr-1.5 sm:mr-2 text-[#7A1C32]"></i>
-                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${usuarioLogueadoOriginal}</span>
+                            <span class="max-w-[70px] sm:max-w-[120px] truncate">${esc(original)}</span>
                             <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                         </button>
                         <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
-                            <div class="px-4 py-3 text-xs text-gray-500">Sesión iniciada como<br><strong class="text-gray-800 truncate block">${usuarioLogueadoOriginal}</strong></div>
+                            <div class="px-4 py-3 text-xs text-gray-500">Sesión iniciada como<br><strong class="text-gray-800 truncate block">${esc(original)}</strong></div>
                             ${esAdmin ? `
                                 <div class="py-1"><a href="admin-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-gears mr-2"></i> Panel Administrador</a></div>
                             ` : `
                                 <div class="py-1"><a href="mis-pedidos.html" class="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center transition-colors"><i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos</a></div>
                             `}
                             <div class="pt-1"><button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center transition-colors cursor-pointer"><i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión</button></div>
-                        </div>
-                    `;
+                        </div>`;
                 } else {
-                    contenedorUsuario.innerHTML = `
+                    contUsr.innerHTML = `
                         <a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center shadow-sm whitespace-nowrap">
                             <i class="fa-solid fa-user text-[#7A1C32] mr-1.5 sm:mr-2"></i> <span>Ingresar</span>
-                        </a>
-                    `;
+                        </a>`;
                 }
             }
 
-            const verificarCarga = setInterval(() => {
-                if (typeof productosInventario !== 'undefined' && productosInventario.length > 0) {
-                    clearInterval(verificarCarga);
+            refrescarContadorCarrito();
 
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const catParam = urlParams.get('cat');
-                    
-                    // OBTENER TODAS LAS CATEGORÍAS ÚNICAS EXISTENTES EN EL CSV (SIN DEPENDER DE LISTAS ESTÁTICAS LIMITADAS)
-                    const categoriasEnInventario = [...new Set(productosInventario.map(p => String(p.categoria || "").trim()))].filter(Boolean);
-
-                    let categoriaActiva = catParam ? decodeURIComponent(catParam).trim() : '';
-                    if (!categoriaActiva && categoriasEnInventario.length > 0) {
-                        categoriaActiva = categoriasEnInventario[0];
+            // Esperar el inventario (máx. ~15 s)
+            let intentos = 0;
+            const espera = setInterval(() => {
+                intentos++;
+                if (!inventarioListo()) {
+                    if (intentos > 300) {
+                        clearInterval(espera);
+                        document.getElementById("catalog-full-grid").innerHTML =
+                            `<div class="col-span-full text-center text-gray-400 py-16 text-sm font-semibold">No se pudo cargar el inventario.</div>`;
+                        document.getElementById("categoria-titulo").textContent = "Categorías";
                     }
-
-                    const lateralEl = document.getElementById('lista-categorias-lateral');
-                    const movilEl = document.getElementById('lista-categorias-movil');
-
-                    // CONSTRUIR EL MENÚ CON TODAS LAS CATEGORÍAS DISPONIBLES EN EL CSV
-                    const generarHTMLCategorias = (esMovil = false) => {
-                        return categoriasEnInventario.map(catNombre => {
-                            const activo = normalizarTexto(catNombre) === normalizarTexto(categoriaActiva);
-                            if (esMovil) {
-                                return `
-                                    <a href="categorias.html?cat=${encodeURIComponent(catNombre)}" class="flex-shrink-0 px-3 py-2 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}">${catNombre}</a>
-                                `;
-                            } else {
-                                return `
-                                    <a href="categorias.html?cat=${encodeURIComponent(catNombre)}" class="flex items-center justify-between p-3 rounded-xl font-bold text-sm uppercase transition-all ${activo ? 'bg-[#7A1C32] text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
-                                        <span>${catNombre}</span>
-                                        <span class="text-xs px-2 py-0.5 rounded-full ${activo ? 'bg-white text-[#7A1C32]' : 'bg-green-100 text-green-700'} font-extrabold">Disponible</span>
-                                    </a>
-                                `;
-                            }
-                        }).join('');
-                    };
-
-                    if (lateralEl) lateralEl.innerHTML = generarHTMLCategorias(false);
-                    if (movilEl) movilEl.innerHTML = generarHTMLCategorias(true);
-
-                    const tituloEl = document.getElementById('categoria-titulo');
-                    if (tituloEl) tituloEl.textContent = `Categoría: ${categoriaActiva}`;
-
-                    const gridContainer = document.getElementById('catalog-full-grid');
-                    if (gridContainer) {
-                        gridContainer.style.opacity = '0';
-                        setTimeout(() => {
-                            const normTarget = normalizarTexto(categoriaActiva);
-                            const productosFiltrados = productosInventario.filter(p => normalizarTexto(p.categoria) === normTarget);
-
-                            if (typeof renderizarProductosGrilla === 'function') {
-                                renderizarProductosGrilla(productosFiltrados);
-                            }
-                            gridContainer.style.opacity = '1';
-                        }, 150);
-                    }
+                    return;
                 }
+                clearInterval(espera);
+
+                construirCategorias();
+                const param = new URLSearchParams(window.location.search).get("cat");
+                const keyParam = normCat(param ? decodeURIComponent(param) : "");
+                const cat = categorias.find(c => c.key === keyParam && c.disponible) || categorias.find(c => c.disponible);
+                if (cat) mostrarCategoria(cat.key, false);
             }, 50);
         });
+    })();
     </script>
 
     <!-- GENERADOR PDF -->
@@ -743,3 +928,4 @@
     </script>
 </body>
 </html>
+
