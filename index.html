@@ -363,6 +363,22 @@
                     </div>
                 `;
 
+                const zoomBox = document.getElementById("zoom-box");
+                const imgModal = document.getElementById("imagen-principal-modal");
+                if (zoomBox && imgModal) {
+                    zoomBox.addEventListener("mousemove", (e) => {
+                        const rect = zoomBox.getBoundingClientRect();
+                        const x = ((e.clientX - rect.left) / rect.width) * 100;
+                        const y = ((e.clientY - rect.top) / rect.height) * 100;
+                        imgModal.style.transformOrigin = `${x}% ${y}%`;
+                        imgModal.style.transform = "scale(2.2)";
+                    });
+                    zoomBox.addEventListener("mouseleave", () => {
+                        imgModal.style.transformOrigin = "center center";
+                        imgModal.style.transform = "scale(1)";
+                    });
+                }
+
                 document.getElementById("btn-agregar-carrito-directo").addEventListener("click", () => {
                     const cantidad = Math.max(1, parseInt(document.getElementById("cantidad-producto").value, 10) || 1);
                     agregarAlCarrito(producto, cantidad);
