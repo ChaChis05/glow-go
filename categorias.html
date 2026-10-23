@@ -225,8 +225,30 @@
 
     <div id="toast-carrito" role="status" aria-live="polite"></div>
 
-    <!-- SCRIPT PRINCIPAL EXISTENTE -->
+  
+    <!-- Lee siempre el catalogo.csv actualizado (sin caché) y con la codificación correcta -->
+<script>
+(function () {
+    const fetchOriginal = window.fetch.bind(window);
+    window.fetch = async function (input, init) {
+        const url = typeof input === "string" ? input : ((input && input.url) || "");
+        if (/(^|\/)catalogo\.csv(\?|$)/i.test(url)) {
+            const sep = url.includes("?") ? "&" : "?";
+            const resp = await fetchOriginal(url + sep + "v=" + Date.now(), Object.assign({}, init, { cache: "no-store" }));
+            if (!resp.ok) return resp;
+            const buf = await resp.arrayBuffer();
+            let texto;
+            try { texto = new TextDecoder("utf-8", { fatal: true }).decode(buf); }
+            catch (e) { texto = new TextDecoder("windows-1252").decode(buf); }
+            return new Response(texto, { status: resp.status, headers: { "Content-Type": "text/csv; charset=utf-8" } });
+        }
+        return fetchOriginal(input, init);
+    };
+})();
+</script>
+     <!-- SCRIPT PRINCIPAL EXISTENTE -->
     <script src="js/app.js"></script>
+
 
     <script>
     (function () {
