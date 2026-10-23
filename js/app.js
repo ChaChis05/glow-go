@@ -14,7 +14,6 @@ const categoriasOficiales = [
     { nombre: "FERRETERÍA" },
     { nombre: "HALLOWEEN" },
     { nombre: "HOGAR" },
-    { nombre: "JOYERÍA" },
     { nombre: "MASCOTAS" },
     { nombre: "PAPELERÍA" },
     { nombre: "PERFUMERÍA" },
