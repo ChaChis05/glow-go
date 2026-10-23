@@ -503,12 +503,7 @@
                     mapa.set(key, { key, nombre: c.nombre, disponible: keysCsv.has(key) });
                 });
             }
-            // Categorías del inventario que no estén en la lista oficial: también disponibles
-            productosInventario.forEach(p => {
-                const key = normCat(p.categoria);
-                if (!key || mapa.has(key)) return;
-                mapa.set(key, { key, nombre: String(p.categoria).trim().toUpperCase(), disponible: true });
-            });
+
             categorias = Array.from(mapa.values());
         }
 
