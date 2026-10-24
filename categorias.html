@@ -330,9 +330,10 @@
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => t.classList.remove("visible"), 1800);
         }
-        function anadirAlCarritoGlow(producto, cantidad) {
-            if (!producto) return false;
-            cantidad = Math.max(1, parseInt(cantidad, 10) || 1);
+       function anadirAlCarritoGlow(producto, cantidad) {
+    if (!producto) return false;
+    if (window.productoAgotado && window.productoAgotado(producto)) { mostrarAviso("Producto agotado"); return false; }
+    cantidad = Math.max(1, parseInt(cantidad, 10) || 1);
             const carrito = leerCarrito();
             const existente = carrito.find(i => (i.sku && producto.sku && i.sku === producto.sku) || i.nombre === producto.nombre);
             if (existente) {
