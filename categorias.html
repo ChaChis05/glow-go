@@ -104,7 +104,11 @@
             border-radius: 50%;
             animation: girar-pdf 0.8s linear infinite;
         }
-        @keyframes girar-pdf { to { transform: rotate(360deg); } }
+             @keyframes girar-pdf { to { transform: rotate(360deg); } }
+
+        /* El botón del PDF solo lo ve la administradora */
+        #btn-generar-catalogo-pdf { display: none !important; }
+        body.glow-admin #btn-generar-catalogo-pdf { display: inline-flex !important; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
@@ -146,17 +150,17 @@
        </div>
    </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        <div class="barra-catalogo-estetica rounded-2xl py-5 px-6 mb-8 text-center relative overflow-hidden">
-            <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
-            <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
-            <h1 id="categoria-titulo" class="text-2xl md:text-3xl font-black text-white tracking-wide uppercase">Cargando...</h1>
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <div class="barra-catalogo-estetica rounded-2xl py-8 md:py-10 px-6 mb-8 text-center relative overflow-hidden">
+        <div class="absolute inset-x-0 top-0 h-[1px] bg-amber-300/60"></div>
+        <div class="absolute inset-x-0 bottom-0 h-[1px] bg-amber-300/60"></div>
+      <h1 id="categoria-titulo" class="text-3xl md:text-5xl leading-tight font-black text-white tracking-wide uppercase">Cargando...</h1>
 
-            <button id="btn-generar-catalogo-pdf" type="button" onclick="generarCatalogoPDF()" class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-extrabold text-[#7A1C32] shadow-lg transition-all hover:bg-amber-50 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-wait">
-                <i class="fa-solid fa-file-pdf"></i>
-                <span>Generar catálogo PDF</span>
-            </button>
-        </div>
+        <button id="btn-generar-catalogo-pdf" type="button" onclick="generarCatalogoPDF()" class="mt-3 items-center justify-center gap-1.5 rounded-lg bg-white/95 px-3 py-1.5 text-xs font-bold text-[#7A1C32] shadow transition-all hover:bg-amber-50 disabled:opacity-60 disabled:cursor-wait">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span>Generar catálogo PDF</span>
+        </button>
+    </div>
 
         <div class="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-4 lg:gap-8">
             <div class="lg:hidden bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
