@@ -141,15 +141,37 @@
         decorar();
     };
 
-    function productoDeBoton(btn) {
-        if (typeof productosInventario === "undefined") return null;
-        var idx = btn.getAttribute("data-add");
-        if (idx !== null) return productosInventario[parseInt(idx, 10)] || null;
-        var m = (btn.getAttribute("onclick") || "").match(/agregarAlCarrito\((\d+)\)/);
-        if (m) {
-            var id = parseInt(m[1], 10);
-            return productosInventario.find(function (p) { return p.id === id; }) || null;
+    // Busca un producto por id: primero en la lista de catalogo.html, luego en la de app.js
+    function productoPorId(id) {
+        var p = null;
+        try {
+            if (typeof listaProductosGlobal !== "undefined" && Array.isArray(listaProductosGlobal)) {
+                p = listaProductosGlobal.find(function (x) { return x.id === id; }) || null;
+            }
+        } catch (e) {}
+        if (!p && typeof productosInventario !== "undefined" && Array.isArray(productosInventario)) {
+            p = productosInventario.find(function (x) { return x.id === id; }) || null;
         }
+        return p;
+    }
+
+    function hayProductos() {
+        try {
+            if (typeof productosInventario !== "undefined" && productosInventario.length) return true;
+        } catch (e) {}
+        try {
+            if (typeof listaProductosGlobal !== "undefined" && listaProductosGlobal.length) return true;
+        } catch (e) {}
+        return false;
+    }
+
+    function productoDeBoton(btn) {
+        var idx = btn.getAttribute("data-add");
+        if (idx !== null && typeof productosInventario !== "undefined") {
+            return productosInventario[parseInt(idx, 10)] || null;
+        }
+        var m = (btn.getAttribute("onclick") || "").match(/agregarAlCarrito(?:PorId)?\((\d+)\)/);
+        if (m) return productoPorId(parseInt(m[1], 10));
         return null;
     }
 
@@ -159,10 +181,10 @@
     }
 
     function decorar() {
-        if (typeof productosInventario === "undefined" || !productosInventario.length) return;
+        if (!hayProductos()) return;
         if (observador) observador.disconnect();
 
-        document.querySelectorAll('[data-add], button[onclick*="agregarAlCarrito("]').forEach(function (btn) {
+        document.querySelectorAll('[data-add], button[onclick*="agregarAlCarrito("], button[onclick*="agregarAlCarritoPorId("]').forEach(function (btn) {
             var p = productoDeBoton(btn);
             if (!p) return;
             var card = btn.closest("article") || btn.closest(".rounded-2xl");
@@ -206,20 +228,33 @@
         observar();
     }
 
-    // Bloquea añadir al carrito un producto agotado (botones de app.js y su ventana emergente)
-    if (typeof window.agregarAlCarrito === "function") {
-        var original = window.agregarAlCarrito;
-        window.agregarAlCarrito = function (id) {
-            var p = (typeof productosInventario !== "undefined")
-                ? productosInventario.find(function (x) { return x.id === id; })
-                : null;
-            if (p && window.productoAgotado(p)) {
-                aviso("Producto agotado");
-                return;
-            }
-            return original.apply(this, arguments);
-        };
+    // Bloquea añadir al carrito un producto agotado.
+    // Funciona aunque la función se defina después de este archivo (como en catalogo.html).
+    function protegerFuncion(nombre) {
+        function envolver(fn) {
+            return function (id) {
+                var p = productoPorId(id);
+                if (p && window.productoAgotado(p)) {
+                    aviso("Producto agotado");
+                    return;
+                }
+                return fn.apply(this, arguments);
+            };
+        }
+        if (typeof window[nombre] === "function") {
+            window[nombre] = envolver(window[nombre]);
+            return;
+        }
+        var guardada;
+        Object.defineProperty(window, nombre, {
+            configurable: true,
+            enumerable: true,
+            get: function () { return guardada; },
+            set: function (fn) { guardada = (typeof fn === "function") ? envolver(fn) : fn; }
+        });
     }
+    protegerFuncion("agregarAlCarrito");
+    protegerFuncion("agregarAlCarritoPorId");
 
     // Lista temporal de agotados (opcional): archivo agotados.json con los SKU, ej: ["SKU-1","ABC123"]
     function cargarAgotados() {
