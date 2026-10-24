@@ -96,6 +96,15 @@ async function cargarProductosDesdeExcel() {
                 imagenes: arrayRutas
             };
         });
+        
+        // Quitar productos con la misma referencia (SKU) repetida
+        const skusVistos = new Set();
+        productosInventario = productosInventario.filter(p => {
+            const clave = String(p.sku).trim().toLowerCase();
+            if (skusVistos.has(clave)) return false;
+            skusVistos.add(clave);
+            return true;
+        });
     } catch (error) {
         console.error("Error al procesar el archivo CSV:", error);
     }
