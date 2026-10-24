@@ -165,6 +165,19 @@
         return false;
     }
 
+    function productoPorSku(sku) {
+        var buscado = String(sku || "").trim().toUpperCase();
+        if (!buscado) return null;
+        var listas = [];
+        try { if (typeof listaProductosGlobal !== "undefined") listas.push(listaProductosGlobal); } catch (e) {}
+        try { if (typeof productosInventario !== "undefined") listas.push(productosInventario); } catch (e) {}
+        for (var i = 0; i < listas.length; i++) {
+            var hallado = (listas[i] || []).find(function (p) { return claveSku(p) === buscado; });
+            if (hallado) return hallado;
+        }
+        return null;
+    }
+
     function productoDeBoton(btn) {
         var idx = btn.getAttribute("data-add");
         if (idx !== null && typeof productosInventario !== "undefined") {
@@ -175,54 +188,73 @@
         return null;
     }
 
+    // Ventanas emergentes: el producto se identifica por el SKU que muestra la ventana
+    function productoDeModal(btn) {
+        var sku = "";
+        if (btn.id === "modal-btn-agregar") {
+            var e1 = document.getElementById("modal-sku");
+            sku = e1 ? e1.textContent : "";
+        } else {
+            var cont = btn.closest("#modal-contenido") || btn.closest(".rounded-3xl");
+            var sp = cont && cont.querySelector("span.uppercase");
+            sku = sp ? sp.textContent : "";
+        }
+        return productoPorSku(sku);
+    }
+
     var observador = null;
     function observar() {
         if (observador && document.body) observador.observe(document.body, { childList: true, subtree: true });
+    }
+
+    // Barra verde/roja + imagen gris + botón desactivado, para una tarjeta o ventana emergente
+    function aplicarEstado(btn, p, card) {
+        if (!btn || !p || !card) return;
+        var agotado = window.productoAgotado(p);
+
+        var barra = card.querySelector(".glow-estado");
+        if (!barra) {
+            var fila = btn.parentElement;
+            var ancla = fila.querySelectorAll("button").length > 1 ? fila : btn;
+            barra = document.createElement("div");
+            ancla.parentNode.insertBefore(barra, ancla);
+        }
+        var clase = "glow-estado " + (agotado ? "no" : "ok");
+        var texto = agotado ? "Agotado" : "Disponible";
+        barra.dataset.sku = claveSku(p);
+        if (barra.className !== clase) barra.className = clase;
+        if (barra.textContent !== texto) barra.textContent = texto;
+
+        card.classList.toggle("glow-agotado", agotado);
+
+        if (agotado) {
+            if (!btn.classList.contains("glow-btn-agotado")) {
+                btn.dataset.glowOrig = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-ban mr-1.5"></i> Agotado';
+                btn.disabled = true;
+                btn.classList.add("glow-btn-agotado");
+            }
+        } else if (btn.classList.contains("glow-btn-agotado")) {
+            btn.innerHTML = btn.dataset.glowOrig || btn.innerHTML;
+            delete btn.dataset.glowOrig;
+            btn.disabled = false;
+            btn.classList.remove("glow-btn-agotado");
+        }
     }
 
     function decorar() {
         if (!hayProductos()) return;
         if (observador) observador.disconnect();
 
+        // Tarjetas de producto
         document.querySelectorAll('[data-add], button[onclick*="agregarAlCarrito("], button[onclick*="agregarAlCarritoPorId("]').forEach(function (btn) {
-            var p = productoDeBoton(btn);
-            if (!p) return;
             var card = btn.closest("article") || btn.closest(".rounded-2xl");
-            if (!card) return;
+            aplicarEstado(btn, productoDeBoton(btn), card);
+        });
 
-            var agotado = window.productoAgotado(p);
-
-            // Barra verde / roja
-            var barra = card.querySelector(".glow-estado");
-            if (!barra) {
-                var fila = btn.parentElement;
-                var ancla = fila.querySelectorAll("button").length > 1 ? fila : btn;
-                barra = document.createElement("div");
-                ancla.parentNode.insertBefore(barra, ancla);
-            }
-            var clase = "glow-estado " + (agotado ? "no" : "ok");
-            var texto = agotado ? "Agotado" : "Disponible";
-            barra.dataset.sku = claveSku(p);
-            if (barra.className !== clase) barra.className = clase;
-            if (barra.textContent !== texto) barra.textContent = texto;
-
-            // Imagen gris + etiqueta
-            card.classList.toggle("glow-agotado", agotado);
-
-            // Botón añadir
-            if (agotado) {
-                if (!btn.classList.contains("glow-btn-agotado")) {
-                    btn.dataset.glowOrig = btn.innerHTML;
-                    btn.innerHTML = '<i class="fa-solid fa-ban mr-1.5"></i> Agotado';
-                    btn.disabled = true;
-                    btn.classList.add("glow-btn-agotado");
-                }
-            } else if (btn.classList.contains("glow-btn-agotado")) {
-                btn.innerHTML = btn.dataset.glowOrig || btn.innerHTML;
-                delete btn.dataset.glowOrig;
-                btn.disabled = false;
-                btn.classList.remove("glow-btn-agotado");
-            }
+        // Ventanas emergentes (detalle del producto, también las que abre el buscador)
+        document.querySelectorAll("#btn-agregar-carrito-directo, #modal-btn-agregar").forEach(function (btn) {
+            aplicarEstado(btn, productoDeModal(btn), btn.closest(".rounded-3xl"));
         });
 
         observar();
@@ -255,6 +287,115 @@
     }
     protegerFuncion("agregarAlCarrito");
     protegerFuncion("agregarAlCarritoPorId");
+
+    /* ---------- Buscador: coincide con el INICIO de cualquier palabra del nombre ---------- */
+    function sinTildes(t) {
+        return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+    function esc(t) {
+        return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    }
+
+    // Lista de productos sin repetir referencias (SKU)
+    function productosSinRepetir() {
+        var base = [];
+        try { if (typeof listaProductosGlobal !== "undefined" && listaProductosGlobal.length) base = listaProductosGlobal; } catch (e) {}
+        if (!base.length) {
+            try { if (typeof productosInventario !== "undefined") base = productosInventario; } catch (e) {}
+        }
+        var vistos = {}, salida = [];
+        base.forEach(function (p) {
+            var k = claveSku(p) || ("id" + p.id);
+            if (vistos[k]) return;
+            vistos[k] = true;
+            salida.push(p);
+        });
+        return salida;
+    }
+
+    function coincideBusqueda(p, palabrasQuery, queryCompleta) {
+        var palabras = sinTildes(p.nombre).split(/[^a-z0-9]+/).filter(Boolean);
+        var todas = palabrasQuery.every(function (q) {
+            return palabras.some(function (w) { return w.indexOf(q) === 0; });
+        });
+        if (todas) return true;
+        // Referencia (SKU): solo si se escribió al menos 3 caracteres
+        return queryCompleta.length >= 3 && sinTildes(p.sku).indexOf(queryCompleta) === 0;
+    }
+
+    var ultimosResultados = [];
+    function buscarGlow(texto) {
+        var dd = document.getElementById("dropdown-busqueda");
+        if (!dd) return;
+        var q = sinTildes(texto).trim();
+        var palabrasQuery = q.split(/[^a-z0-9]+/).filter(Boolean);
+
+        if (!palabrasQuery.length) {
+            dd.classList.add("hidden");
+            dd.innerHTML = "";
+            ultimosResultados = [];
+            return;
+        }
+
+        var fuente = productosSinRepetir();
+        if (!fuente.length) {
+            dd.innerHTML = '<div class="p-3 text-xs text-gray-500 text-center">Cargando inventario...</div>';
+            dd.classList.remove("hidden");
+            return;
+        }
+
+        ultimosResultados = fuente.filter(function (p) { return coincideBusqueda(p, palabrasQuery, q); }).slice(0, 6);
+
+        if (!ultimosResultados.length) {
+            dd.innerHTML = '<div class="p-3 text-xs text-gray-500 text-center">No se encontraron productos</div>';
+            dd.classList.remove("hidden");
+            return;
+        }
+
+        dd.innerHTML = ultimosResultados.map(function (p, i) {
+            var img = (p.imagenes && p.imagenes[0]) ? p.imagenes[0] : "logo_glow.jpg";
+            var ag = window.productoAgotado(p);
+            return '<div data-glow-res="' + i + '" class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors' + (ag ? ' opacity-70' : '') + '">' +
+                '<img src="' + esc(img) + '" class="w-10 h-10 object-contain rounded-lg bg-gray-100 p-1 flex-shrink-0' + (ag ? ' grayscale' : '') + '" onerror="this.src=\'logo_glow.jpg\'">' +
+                '<div class="flex-grow min-w-0">' +
+                '<h4 class="text-xs font-bold text-gray-800 truncate">' + esc(p.nombre) + '</h4>' +
+                '<span class="text-[10px] text-[#7A1C32] font-semibold">' + esc(p.precioStr || p.precio || "") + '</span>' +
+                (ag ? '<span class="text-[10px] font-extrabold text-red-600 ml-2">AGOTADO</span>' : '') +
+                '</div></div>';
+        }).join("");
+        dd.classList.remove("hidden");
+    }
+
+    function abrirProducto(p) {
+        if (typeof window.abrirDetalleProductoDirectoIndex === "function") {
+            window.abrirDetalleProductoDirectoIndex(p);
+        } else if (typeof window.abrirModalProducto === "function") {
+            window.abrirModalProducto(p.id);
+        }
+    }
+
+    document.addEventListener("click", function (e) {
+        var fila = e.target.closest("#dropdown-busqueda [data-glow-res]");
+        if (!fila) return;
+        var p = ultimosResultados[parseInt(fila.getAttribute("data-glow-res"), 10)];
+        var dd = document.getElementById("dropdown-busqueda");
+        if (dd) dd.classList.add("hidden");
+        if (p) abrirProducto(p);
+    }, true);
+
+    // Las páginas definen su propio buscador más abajo; este se queda como el oficial en todas
+    try {
+        Object.defineProperty(window, "buscarProductosTiempoReal", {
+            configurable: true,
+            enumerable: true,
+            get: function () { return buscarGlow; },
+            set: function () {}
+        });
+    } catch (e) {
+        window.buscarProductosTiempoReal = buscarGlow;
+    }
 
     // Lista temporal de agotados (opcional): archivo agotados.json con los SKU, ej: ["SKU-1","ABC123"]
     function cargarAgotados() {
