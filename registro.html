@@ -18,77 +18,117 @@
             <p class="text-xs text-gray-500 mt-1">Regístrate para guardar tus pedidos y recibir tus envíos</p>
         </div>
 
-        <!-- CONTENEDOR DE ERROR -->
-        <div id="mensaje-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center">
-            <!-- Mensaje de error dinámico -->
-        </div>
+        <div id="mensaje-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center"></div>
 
         <form id="form-registro" class="space-y-4">
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre completo</label>
-                <input type="text" id="reg-nombre" required placeholder="Tu nombre" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                <input type="text" id="reg-nombre" required placeholder="Tu nombre" autocomplete="name" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Correo electrónico</label>
-                <input type="email" id="reg-correo" required placeholder="ejemplo@correo.com" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                <input type="email" id="reg-correo" required placeholder="ejemplo@correo.com" autocomplete="email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Número de celular</label>
-                <input type="tel" id="reg-telefono" required placeholder="3107027780" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                <input type="tel" id="reg-telefono" required placeholder="3107027780" inputmode="numeric" autocomplete="tel" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Contraseña</label>
-                <input type="password" id="reg-password" required placeholder="••••••••" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                <input type="password" id="reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
             </div>
 
-            <button type="submit" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-sm cursor-pointer mt-2">
+            <button type="submit" id="btn-registrar" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-sm cursor-pointer mt-2 disabled:opacity-60 disabled:cursor-wait">
                 Registrarse
             </button>
         </form>
 
         <div class="text-center mt-6 text-xs text-gray-500">
-            ¿Ya tienes una cuenta? <a href="login.html" class="text-[#7A1C32] font-bold hover:underline">Inicia sesión aquí</a>
+            ¿Ya tienes una cuenta? <a href="login.html" id="enlace-login" class="text-[#7A1C32] font-bold hover:underline">Inicia sesión aquí</a>
         </div>
         <div class="text-center mt-3">
             <a href="index.html" class="text-xs text-gray-400 hover:text-gray-600"><i class="fa-solid fa-arrow-left mr-1"></i> Volver a la tienda</a>
         </div>
     </div>
 
-    <script>
-        function mostrarError(mensaje) {
-            const contenedorError = document.getElementById("mensaje-error");
-            contenedorError.textContent = mensaje;
-            contenedorError.classList.remove("hidden");
+    <script>window.GLOW_SIN_RECARGA = true;</script>
+    <script type="module">
+        import {
+            auth, db, createUserWithEmailAndPassword, updateProfile,
+            doc, getDoc, writeBatch, serverTimestamp, soloDigitos
+        } from "./js/glow-fb.js";
+
+        const $ = (id) => document.getElementById(id);
+        function mostrarError(m) { $("mensaje-error").textContent = m; $("mensaje-error").classList.remove("hidden"); }
+
+        const volver = new URLSearchParams(location.search).get("volver");
+        const volverOk = (volver && /^[a-z0-9_\-]+\.html$/i.test(volver)) ? volver : "index.html";
+        if (volverOk !== "index.html") $("enlace-login").href = "login.html?volver=" + encodeURIComponent(volverOk);
+
+        function mensajeError(err) {
+            const c = err && err.code ? err.code : "";
+            if (c === "auth/email-already-in-use") return "⚠️ Este correo ya se encuentra registrado. Intenta iniciar sesión.";
+            if (c === "auth/weak-password") return "⚠️ La contraseña es muy débil. Usa al menos 6 caracteres.";
+            if (c === "auth/invalid-email") return "⚠️ El correo electrónico no es válido.";
+            if (c === "auth/network-request-failed") return "⚠️ No hay conexión a internet. Inténtalo de nuevo.";
+            return "⚠️ No se pudo crear la cuenta. (" + (c || "error") + ")";
         }
 
-        document.getElementById("form-registro").addEventListener("submit", function(e) {
+        $("form-registro").addEventListener("submit", async (e) => {
             e.preventDefault();
-            document.getElementById("mensaje-error").classList.add("hidden");
+            $("mensaje-error").classList.add("hidden");
 
-            const nombre = document.getElementById("reg-nombre").value.trim();
-            const correo = document.getElementById("reg-correo").value.trim();
-            const telefono = document.getElementById("reg-telefono").value.trim();
-            const password = document.getElementById("reg-password").value.trim();
+            const nombre = $("reg-nombre").value.trim();
+            const correo = $("reg-correo").value.trim().toLowerCase();
+            const telefono = soloDigitos($("reg-telefono").value);
+            const clave = $("reg-password").value;
 
-            let usuarios = JSON.parse(localStorage.getItem("glow_usuarios")) || [];
+            if (!nombre) { mostrarError("⚠️ Escribe tu nombre completo."); return; }
+            if (telefono.length !== 10) { mostrarError("⚠️ Escribe un número de celular válido de 10 dígitos."); return; }
+            if (clave.length < 6) { mostrarError("⚠️ La contraseña debe tener al menos 6 caracteres."); return; }
 
-            // Verificar si el correo ya está registrado
-            if (usuarios.some(u => u.correo.toLowerCase() === correo.toLowerCase())) {
-                mostrarError("⚠️ Este correo ya se encuentra registrado. Intenta iniciar sesión.");
-                return;
+            const boton = $("btn-registrar");
+            boton.disabled = true;
+            boton.textContent = "Creando cuenta...";
+            try {
+                // ¿El celular ya está en uso?
+                const ocupado = await getDoc(doc(db, "telefonos", telefono));
+                if (ocupado.exists()) {
+                    mostrarError("⚠️ Este número de celular ya está registrado. Intenta iniciar sesión.");
+                    return;
+                }
+
+                const cred = await createUserWithEmailAndPassword(auth, correo, clave);
+                const u = cred.user;
+                try { await updateProfile(u, { displayName: nombre }); } catch (ex) { /* no es crítico */ }
+
+                // Registro permanente del usuario
+                try {
+                    const lote = writeBatch(db);
+                    lote.set(doc(db, "usuarios", u.uid), {
+                        nombre: nombre,
+                        correo: u.email,
+                        telefono: telefono,
+                        fechaRegistro: serverTimestamp(),
+                        ultimoIngreso: serverTimestamp()
+                    });
+                    lote.set(doc(db, "telefonos", telefono), { uid: u.uid, correo: u.email });
+                    await lote.commit();
+                } catch (ex) {
+                    console.error("La cuenta se creó, pero no se pudo guardar el perfil:", ex);
+                }
+
+                localStorage.setItem("usuarioLogueado", u.email);
+                location.href = volverOk;
+            } catch (err) {
+                mostrarError(mensajeError(err));
+            } finally {
+                boton.disabled = false;
+                boton.textContent = "Registrarse";
             }
-
-            // Guardar nuevo usuario
-            usuarios.push({ nombre, correo, telefono, password, fecha: new Date().toLocaleString() });
-            localStorage.setItem("glow_usuarios", JSON.stringify(usuarios));
-
-            // Iniciar sesión automáticamente
-            localStorage.setItem("usuarioLogueado", correo);
-
-            window.location.href = "index.html";
         });
     </script>
 </body>
