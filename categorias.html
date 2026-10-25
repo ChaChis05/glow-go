@@ -729,7 +729,7 @@
             return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
         }
 
-        function cargarImagenComoDatosPDF(ruta) {
+        function cargarImagenComoDatosPDF(ruta, segundoIntento) {
             return new Promise(resolve => {
                 const imagen = new Image();
                 imagen.onload = function () {
@@ -746,7 +746,14 @@
                         resolve(null);
                     }
                 };
-                imagen.onerror = () => resolve(null);
+                imagen.onerror = () => {
+    const alterna = String(ruta).replace(/IMAGENES(?:%20|\s)PRODUCTOS\//i, "IMAGENES PRODUCTOS 2/");
+    if (!segundoIntento && alterna !== ruta) {
+        cargarImagenComoDatosPDF(alterna, true).then(resolve);
+    } else {
+        resolve(null);
+    }
+};
                 imagen.src = ruta;
             });
         }
