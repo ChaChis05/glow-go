@@ -156,12 +156,9 @@
     }
 
     function hayProductos() {
-        try {
-            if (typeof productosInventario !== "undefined" && productosInventario.length) return true;
-        } catch (e) {}
-        try {
-            if (typeof listaProductosGlobal !== "undefined" && listaProductosGlobal.length) return true;
-        } catch (e) {}
+        try { if (typeof productosInventario !== "undefined" && productosInventario.length) return true; } catch (e) {}
+        try { if (typeof listaProductosGlobal !== "undefined" && listaProductosGlobal.length) return true; } catch (e) {}
+        try { if (typeof productosCargados !== "undefined" && productosCargados.length) return true; } catch (e) {}
         return false;
     }
 
@@ -170,6 +167,7 @@
         if (!buscado) return null;
         var listas = [];
         try { if (typeof listaProductosGlobal !== "undefined") listas.push(listaProductosGlobal); } catch (e) {}
+        try { if (typeof productosCargados !== "undefined") listas.push(productosCargados); } catch (e) {}
         try { if (typeof productosInventario !== "undefined") listas.push(productosInventario); } catch (e) {}
         for (var i = 0; i < listas.length; i++) {
             var hallado = (listas[i] || []).find(function (p) { return claveSku(p) === buscado; });
@@ -242,6 +240,30 @@
         }
     }
 
+    // Tarjetas de la cinta de index.html: no tienen botón "Añadir", solo "Ver"
+    function decorarCinta() {
+        document.querySelectorAll("#cinta-productos > button").forEach(function (card) {
+            var sp = card.querySelector("span.uppercase");
+            var p = productoPorSku(sp ? sp.textContent : "");
+            if (!p) return;
+            var agotado = window.productoAgotado(p);
+
+            var barra = card.querySelector(".glow-estado");
+            if (!barra) {
+                var inferior = card.querySelector(":scope > div:last-child");
+                barra = document.createElement("div");
+                if (inferior) card.insertBefore(barra, inferior); else card.appendChild(barra);
+            }
+            var clase = "glow-estado " + (agotado ? "no" : "ok");
+            var texto = agotado ? "Agotado" : "Disponible";
+            barra.dataset.sku = claveSku(p);
+            if (barra.className !== clase) barra.className = clase;
+            if (barra.textContent !== texto) barra.textContent = texto;
+
+            card.classList.toggle("glow-agotado", agotado);
+        });
+    }
+
     function decorar() {
         if (!hayProductos()) return;
         if (observador) observador.disconnect();
@@ -253,12 +275,28 @@
         });
 
         // Ventanas emergentes (detalle del producto, también las que abre el buscador)
-        document.querySelectorAll("#btn-agregar-carrito-directo, #modal-btn-agregar").forEach(function (btn) {
+        document.querySelectorAll("#btn-agregar-carrito-directo, #btn-agregar-carrito, #modal-btn-agregar").forEach(function (btn) {
             aplicarEstado(btn, productoDeModal(btn), btn.closest(".rounded-3xl"));
         });
 
+        // Cinta "Añadidos recientemente" (index.html)
+        decorarCinta();
+
         observar();
     }
+
+    // Guardia general: si el producto está agotado, el clic en "Añadir" no llega a la página
+    document.addEventListener("click", function (e) {
+        var btn = e.target.closest('#btn-agregar-carrito-directo, #btn-agregar-carrito, #modal-btn-agregar, [data-add], button[onclick*="agregarAlCarrito("], button[onclick*="agregarAlCarritoPorId("]');
+        if (!btn) return;
+        var enModal = btn.matches("#btn-agregar-carrito-directo, #btn-agregar-carrito, #modal-btn-agregar");
+        var p = enModal ? productoDeModal(btn) : productoDeBoton(btn);
+        if (p && window.productoAgotado(p)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            aviso("Producto agotado");
+        }
+    }, true);
 
     // Bloquea añadir al carrito un producto agotado.
     // Funciona aunque la función se defina después de este archivo (como en catalogo.html).
@@ -302,6 +340,9 @@
     function productosSinRepetir() {
         var base = [];
         try { if (typeof listaProductosGlobal !== "undefined" && listaProductosGlobal.length) base = listaProductosGlobal; } catch (e) {}
+        if (!base.length) {
+            try { if (typeof productosCargados !== "undefined" && productosCargados.length) base = productosCargados; } catch (e) {}
+        }
         if (!base.length) {
             try { if (typeof productosInventario !== "undefined") base = productosInventario; } catch (e) {}
         }
