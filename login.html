@@ -18,85 +18,112 @@
             <p class="text-xs text-gray-500 mt-1">Accede a tus pedidos y vive la experiencia Glow & Go</p>
         </div>
 
-        <!-- CONTENEDOR DE MENSAJE DE ERROR (Oculto por defecto) -->
-        <div id="mensaje-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center">
-            <!-- El texto del error se inyectará aquí -->
-        </div>
+        <!-- MENSAJES -->
+        <div id="mensaje-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl text-center"></div>
+        <div id="mensaje-info" class="hidden mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-xs font-bold rounded-xl text-center"></div>
 
         <form id="form-login" class="space-y-4">
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Correo electrónico o número de celular</label>
-                <input type="text" id="login-usuario" required placeholder="ejemplo@correo.com" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                <input type="text" id="login-usuario" required placeholder="ejemplo@correo.com" autocomplete="username" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Contraseña</label>
-                <input type="password" id="login-password" required placeholder="••••••••" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                <button type="button" id="btn-olvide" class="mt-2 text-xs text-[#7A1C32] font-bold hover:underline cursor-pointer">¿Olvidaste tu contraseña?</button>
             </div>
 
-            <button type="submit" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-sm cursor-pointer mt-2">
+            <button type="submit" id="btn-entrar" class="w-full bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-sm cursor-pointer mt-2 disabled:opacity-60 disabled:cursor-wait">
                 Iniciar Sesión
             </button>
         </form>
 
         <div class="text-center mt-6 text-xs text-gray-500">
-            ¿No tienes una cuenta? <a href="registro.html" class="text-[#7A1C32] font-bold hover:underline">Regístrate aquí</a>
+            ¿No tienes una cuenta? <a href="registro.html" id="enlace-registro" class="text-[#7A1C32] font-bold hover:underline">Regístrate aquí</a>
         </div>
         <div class="text-center mt-3">
             <a href="index.html" class="text-xs text-gray-400 hover:text-gray-600"><i class="fa-solid fa-arrow-left mr-1"></i> Volver a la tienda</a>
         </div>
     </div>
 
-    <script>
-        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
-        const PASSWORD_ADMIN = "chachis2905";
+    <!-- En esta página no se recarga automáticamente al cambiar la sesión -->
+    <script>window.GLOW_SIN_RECARGA = true;</script>
+    <script type="module">
+        import {
+            auth, db, signInWithEmailAndPassword, sendPasswordResetEmail,
+            doc, setDoc, serverTimestamp, telefonoACorreo
+        } from "./js/glow-fb.js";
 
-        function mostrarError(mensaje) {
-            const contenedorError = document.getElementById("mensaje-error");
-            contenedorError.textContent = mensaje;
-            contenedorError.classList.remove("hidden");
+        const $ = (id) => document.getElementById(id);
+
+        function mostrarError(m) { $("mensaje-info").classList.add("hidden"); $("mensaje-error").textContent = m; $("mensaje-error").classList.remove("hidden"); }
+        function mostrarInfo(m) { $("mensaje-error").classList.add("hidden"); $("mensaje-info").textContent = m; $("mensaje-info").classList.remove("hidden"); }
+        function limpiar() { $("mensaje-error").classList.add("hidden"); $("mensaje-info").classList.add("hidden"); }
+
+        // A dónde volver después de entrar (solo páginas del propio sitio, ej: carrito.html)
+        function destino() {
+            const v = new URLSearchParams(location.search).get("volver");
+            return (v && /^[a-z0-9_\-]+\.html$/i.test(v)) ? v : "index.html";
+        }
+        const volver = new URLSearchParams(location.search).get("volver");
+        if (volver && /^[a-z0-9_\-]+\.html$/i.test(volver)) {
+            $("enlace-registro").href = "registro.html?volver=" + encodeURIComponent(volver);
         }
 
-        document.getElementById("form-login").addEventListener("submit", function(e) {
+        async function resolverCorreo(valor) {
+            if (valor.includes("@")) return valor.toLowerCase();
+            return await telefonoACorreo(valor);   // entrar con el número de celular
+        }
+
+        function mensajeError(err) {
+            const c = err && err.code ? err.code : "";
+            if (["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email"].includes(c))
+                return "❌ Correo/celular o contraseña incorrectos.";
+            if (c === "auth/too-many-requests") return "⚠️ Demasiados intentos. Espera unos minutos o usa «¿Olvidaste tu contraseña?».";
+            if (c === "auth/network-request-failed") return "⚠️ No hay conexión a internet. Inténtalo de nuevo.";
+            return "⚠️ No se pudo iniciar sesión. (" + (c || "error") + ")";
+        }
+
+        $("form-login").addEventListener("submit", async (e) => {
             e.preventDefault();
-            
-            // Ocultar error previo si lo había
-            document.getElementById("mensaje-error").classList.add("hidden");
-
-            let inputUser = document.getElementById("login-usuario").value.trim();
-            let inputPass = document.getElementById("login-password").value.trim();
-
-            // 1. Validar si es la Administradora (Zaidy)
-            if (inputUser.toLowerCase() === CORREO_ADMIN) {
-                if (inputPass === PASSWORD_ADMIN) {
-                    localStorage.setItem("usuarioLogueado", CORREO_ADMIN);
-                    window.location.href = "index.html";
-                    return;
-                } else {
-                    mostrarError("❌ Contraseña de administrador incorrecta.");
+            limpiar();
+            const usuario = $("login-usuario").value.trim();
+            const clave = $("login-password").value;
+            const boton = $("btn-entrar");
+            boton.disabled = true;
+            boton.textContent = "Entrando...";
+            try {
+                const correo = await resolverCorreo(usuario);
+                if (!correo) {
+                    mostrarError("⚠️ Este celular no se encuentra registrado. Por favor regístrate primero.");
                     return;
                 }
+                const cred = await signInWithEmailAndPassword(auth, correo, clave);
+                localStorage.setItem("usuarioLogueado", cred.user.email);
+                try {
+                    await setDoc(doc(db, "usuarios", cred.user.uid), { ultimoIngreso: serverTimestamp() }, { merge: true });
+                } catch (ex) { console.error("No se pudo guardar el último ingreso:", ex); }
+                location.href = destino();
+            } catch (err) {
+                mostrarError(mensajeError(err));
+            } finally {
+                boton.disabled = false;
+                boton.textContent = "Iniciar Sesión";
             }
+        });
 
-            // 2. Validar contra la lista de usuarios registrados
-            let usuariosRegistrados = JSON.parse(localStorage.getItem("glow_usuarios")) || [];
-            let usuarioEncontrado = usuariosRegistrados.find(u => u.correo.toLowerCase() === inputUser.toLowerCase() || u.telefono === inputUser);
-
-            if (!usuarioEncontrado) {
-                mostrarError("⚠️ Este correo o número no se encuentra registrado. Por favor regístrate primero.");
-                return;
-            }
-
-            // Validar contraseña del usuario normal
-            if (usuarioEncontrado.password !== inputPass) {
-                mostrarError("❌ Contraseña incorrecta.");
-                return;
-            }
-
-            // Inicio de sesión exitoso
-            localStorage.setItem("usuarioLogueado", usuarioEncontrado.correo);
-            window.location.href = "index.html";
+        $("btn-olvide").addEventListener("click", async () => {
+            limpiar();
+            const usuario = $("login-usuario").value.trim();
+            if (!usuario) { mostrarError("⚠️ Escribe arriba tu correo o celular y vuelve a pulsar «¿Olvidaste tu contraseña?»."); return; }
+            try {
+                const correo = await resolverCorreo(usuario);
+                if (correo) await sendPasswordResetEmail(auth, correo);
+            } catch (err) { console.error(err); }
+            mostrarInfo("✅ Si la cuenta existe, te enviamos un enlace a tu correo para crear una nueva contraseña. Revisa también la carpeta de spam.");
         });
     </script>
 </body>
 </html>
+
