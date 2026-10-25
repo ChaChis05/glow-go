@@ -187,17 +187,18 @@
     </footer>
 
     <!-- Botón flotante WhatsApp (contacto personal) -->
-    <a href="https://wa.me/573134237663?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+    <a href="https://wa.me/573107027780?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
 
     <script src="js/app.js"></script>
+    <script type="module" src="js/glow-fb.js"></script>
     <script>
         const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
         const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
 
         // Número al que llegan los pedidos (sin el 57)
-        const NUMERO_WHATSAPP_PEDIDOS = "3134237663";
+        const NUMERO_WHATSAPP_PEDIDOS = "3134237667";
 
         let datosGeoColombia = {};
 
@@ -321,13 +322,23 @@
             renderizarCarrito();
 
             // Cargar departamentos y, cuando estén listos, restaurar los datos guardados
-            cargarGeoDesdeCSV().then(() => {
-                if (usuarioLimpio) aplicarDatosGuardados(usuarioLimpio);
+            cargarGeoDesdeCSV().then(async () => {
+                if (usuarioLimpio) aplicarDatosGuardados(await obtenerEnvioGuardado(usuarioLimpio));
             });
         });
 
-        function aplicarDatosGuardados(usuarioLimpio) {
-            const d = leerJSON("glow_envio_" + usuarioLimpio, null);
+        async function obtenerEnvioGuardado(usuarioLimpio) {
+            try {
+                if (window.glowFB) {
+                    await window.glowFB.usuarioListo;
+                    const d = await window.glowFB.leerEnvio();
+                    if (d) return d;
+                }
+            } catch (e) { console.error("No se pudieron leer los datos de envío guardados:", e); }
+            return leerJSON("glow_envio_" + usuarioLimpio, null);
+        }
+
+        function aplicarDatosGuardados(d) {
             if (!d) return;
             const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
 
@@ -528,7 +539,7 @@
         }
 
         /* ---------- Finalizar por WhatsApp ---------- */
-        window.finalizarCompraWhatsApp = function () {
+        window.finalizarCompraWhatsApp = async function () {
             ocultarError();
             if (!validarFormularioEnvio()) return;
 
@@ -538,64 +549,96 @@
                 return;
             }
 
-            const val = id => document.getElementById(id).value.trim();
-            const nombre = val("envio-nombre");
-            const correo = val("envio-correo");
-            const telefono = val("envio-telefono");
-            const depto = document.getElementById("envio-depto").value;
-            const ciudad = document.getElementById("envio-ciudad").value;
-            const direccion = val("envio-direccion");
-            const cp = val("envio-cp");
-            const especificaciones = val("envio-especificaciones");
-            const observaciones = val("envio-observaciones");
+            // La pestaña de WhatsApp se abre ahora, con el clic, para que el navegador no la bloquee
+            let ventana = null;
+            try {
+                ventana = window.open("", "_blank");
+                if (ventana) ventana.document.write("<p style='font-family:sans-serif;padding:24px'>Registrando tu pedido...</p>");
+            } catch (e) { ventana = null; }
 
-            const chk = document.getElementById("check-guardar-datos");
-            const usuarioClave = (localStorage.getItem("usuarioLogueado") || correo).toLowerCase().trim();
-            if (chk && chk.checked) {
-                localStorage.setItem("glow_envio_" + usuarioClave, JSON.stringify({ nombre, correo, telefono, depto, ciudad, direccion, cp, especificaciones, observaciones }));
+            const boton = document.getElementById("btn-finalizar");
+            const textoBoton = boton ? boton.innerHTML : "";
+            if (boton) { boton.disabled = true; boton.innerHTML = "Registrando pedido..."; }
+
+            try {
+                if (!window.glowFB) throw new Error("SIN_FIREBASE");
+                await window.glowFB.usuarioListo;
+                const user = window.glowFB.auth.currentUser;
+
+                if (!user) {
+                    if (ventana) ventana.close();
+                    mostrarError("⚠️ Para finalizar tu pedido inicia sesión o regístrate. Tu carrito se conserva, te llevamos al inicio de sesión...");
+                    setTimeout(() => { location.href = "login.html?volver=carrito.html"; }, 2200);
+                    return;
+                }
+
+                const val = id => document.getElementById(id).value.trim();
+                const nombre = val("envio-nombre");
+                const correo = val("envio-correo");
+                const telefono = val("envio-telefono");
+                const depto = document.getElementById("envio-depto").value;
+                const ciudad = document.getElementById("envio-ciudad").value;
+                const direccion = val("envio-direccion");
+                const cp = val("envio-cp");
+                const especificaciones = val("envio-especificaciones");
+                const observaciones = val("envio-observaciones");
+
+                const items = carrito.map(i => ({
+                    sku: i.sku || "",
+                    nombre: i.nombre || "",
+                    precio: textoPrecio(i),
+                    precioNum: precioDelItem(i),
+                    cantidad: parseInt(i.cantidad, 10) || 1,
+                    imagen: (i.imagenes && i.imagenes[0]) ? i.imagenes[0] : ""
+                }));
+                const totalProductos = items.reduce((s, i) => s + i.precioNum * i.cantidad, 0);
+
+                // Guardar los datos de envío para próximos pedidos (en tu cuenta, disponibles en cualquier dispositivo)
+                const chk = document.getElementById("check-guardar-datos");
+                if (chk && chk.checked) {
+                    const datosEnvio = { nombre, correo, telefono, depto, ciudad, direccion, cp, especificaciones, observaciones };
+                    try { await window.glowFB.guardarEnvio(datosEnvio); } catch (e) { console.error(e); }
+                    localStorage.setItem("glow_envio_" + (user.email || "").toLowerCase(), JSON.stringify(datosEnvio));
+                }
+
+                // Pedido permanente en Firebase
+                const numeroPedido = await window.glowFB.crearPedido({
+                    nombreCliente: nombre,
+                    correoContacto: correo,
+                    telefonoCliente: telefono,
+                    ubicacion: `${ciudad}, ${depto}`,
+                    direccion: direccion,
+                    codigoPostal: cp || "No especificado",
+                    especificaciones: especificaciones,
+                    observaciones: observaciones || "Ninguna",
+                    items: items,
+                    total: totalProductos
+                });
+
+                let mensaje = `Glow & Go - Mi pedido #${numeroPedido}\n\nTu pedido ya se encuentra registrado pendiente a confirmación.\n\n*Datos del Cliente:*\n- Nombre: ${nombre}\n- Teléfono: ${telefono}\n- Correo: ${correo}\n- Destino: ${ciudad}, ${depto}\n- Dirección: ${direccion}\n${cp ? `- Código postal: ${cp}\n` : ""}- Espec. vivienda: ${especificaciones}\n- Obs: ${observaciones || "Ninguna"}\n\n*Productos solicitados:*\n`;
+
+                items.forEach(item => {
+                    mensaje += `• ${item.nombre} (SKU: ${item.sku || "N/A"}) | Cant: ${item.cantidad} | P. Unit: ${formatoPeso(item.precioNum)} | Total: ${formatoPeso(item.precioNum * item.cantidad)}\n`;
+                });
+
+                mensaje += `\n*Total a pagar (Productos):* ${formatoPeso(totalProductos)}\n\n*A la espera de confirmación de precio de envío, suministrímeme medios de pago para finalizar mi compra.*`;
+
+                localStorage.removeItem("carrito");
+
+                const url = `https://wa.me/57${NUMERO_WHATSAPP_PEDIDOS}?text=${encodeURIComponent(mensaje)}`;
+                if (ventana && !ventana.closed) {
+                    ventana.location.href = url;
+                    setTimeout(() => { window.location.href = "mis-pedidos.html"; }, 700);
+                } else {
+                    window.location.href = url;   // si el navegador bloqueó la pestaña nueva
+                }
+            } catch (err) {
+                console.error(err);
+                if (ventana) ventana.close();
+                mostrarError("⚠️ No se pudo registrar el pedido. Revisa tu conexión e inténtalo de nuevo. Tu carrito no se borró.");
+            } finally {
+                if (boton) { boton.disabled = false; boton.innerHTML = textoBoton; }
             }
-
-            let totalProductos = 0;
-            carrito.forEach(item => { totalProductos += precioDelItem(item) * (parseInt(item.cantidad, 10) || 1); });
-
-            const pedidos = leerJSON("glow_pedidos", []);
-            const maxId = pedidos.reduce((m, p) => Math.max(m, Number(p.id) || 0), 1000);
-            const numeroPedido = maxId + 1;
-
-            pedidos.push({
-                id: numeroPedido,
-                usuario: correo,
-                nombreCliente: nombre,
-                telefonoCliente: telefono,
-                ubicacion: `${ciudad}, ${depto}`,
-                direccion: direccion,
-                codigoPostal: cp || "No especificado",
-                especificaciones: especificaciones,
-                observaciones: observaciones || "Ninguna",
-                items: carrito.map(i => ({ ...i })),
-                total: totalProductos,
-                estado: "Pendiente a confirmación",
-                guia: "",
-                fecha: new Date().toLocaleString()
-            });
-            localStorage.setItem("glow_pedidos", JSON.stringify(pedidos));
-
-            let mensaje = `Glow & Go - Mi pedido #${numeroPedido}\n\nTu pedido ya se encuentra registrado pendiente a confirmación.\n\n*Datos del Cliente:*\n- Nombre: ${nombre}\n- Teléfono: ${telefono}\n- Correo: ${correo}\n- Destino: ${ciudad}, ${depto}\n- Dirección: ${direccion}\n${cp ? `- Código postal: ${cp}\n` : ""}- Espec. vivienda: ${especificaciones}\n- Obs: ${observaciones || "Ninguna"}\n\n*Productos solicitados:*\n`;
-
-            carrito.forEach(item => {
-                const cant = parseInt(item.cantidad, 10) || 1;
-                const unit = precioDelItem(item);
-                mensaje += `• ${item.nombre} (SKU: ${item.sku || "N/A"}) | Cant: ${cant} | P. Unit: ${formatoPeso(unit)} | Total: ${formatoPeso(unit * cant)}\n`;
-            });
-
-            mensaje += `\n*Total a pagar (Productos):* ${formatoPeso(totalProductos)}\n\n*A la espera de confirmación de precio de envío, suministrímeme medios de pago para finalizar mi compra.*`;
-
-            localStorage.removeItem("carrito");
-
-            const url = `https://wa.me/57${NUMERO_WHATSAPP_PEDIDOS}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, "_blank");
-
-            setTimeout(() => { window.location.href = "mis-pedidos.html"; }, 600);
         };
     </script>
 </body>
