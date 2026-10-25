@@ -7,41 +7,16 @@
    Se carga con: <script type="module" src="js/firebase-glow.js"></script>
    DESPUÉS de js/extras.js
    ========================================================== */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-import {
-    getFirestore, doc, onSnapshot, setDoc, arrayUnion, arrayRemove
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+    auth, db, ADMIN_EMAIL, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+    doc, onSnapshot, setDoc, arrayUnion, arrayRemove
+} from "./glow-fb.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyD9s7G1e7TOrPabANqttwITtsD_9oHTc5c",
-    authDomain: "glow-and-go-ef2d2.firebaseapp.com",
-    projectId: "glow-and-go-ef2d2",
-    storageBucket: "glow-and-go-ef2d2.firebasestorage.app",
-    messagingSenderId: "160375816652",
-    appId: "1:160375816652:web:f42fe5d60cf48fec3fdd69",
-    measurementId: "G-LWNM4HEHBK"
-};
-
-// Solo para mostrar u ocultar controles. La seguridad real está en las reglas de Firestore.
-const ADMIN_EMAIL = "zaidycanobenavides@gmail.com";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
 const refAgotados = doc(db, "config", "agotados");
 
 let listaActual = [];
 let esAdmin = false;                                         // sesión de Firebase de la administradora
 let editando = localStorage.getItem("glowEdicion") !== "0";  // interruptor de edición (se recuerda en este dispositivo)
-
-// Si en el login normal de la página entró la administradora, se le ofrece activar la edición
-function esAdminLocal() {
-    const u = (localStorage.getItem("usuarioLogueado") || "").toLowerCase().trim();
-    return u === ADMIN_EMAIL || u === ADMIN_EMAIL.split("@")[0];
-}
 
 /* ---------- Estilos ---------- */
 const estilo = document.createElement("style");
@@ -84,7 +59,7 @@ onSnapshot(
 function pintarChip() {
     const previo = document.getElementById("glow-admin-chip");
     if (previo) previo.remove();
-    if (!esAdmin && !esAdminLocal()) return;
+    if (!esAdmin) return;
 
     const chip = document.createElement("div");
     chip.id = "glow-admin-chip";
@@ -93,10 +68,6 @@ function pintarChip() {
             '<span><i class="fa-solid fa-user-shield"></i> Administradora</span>' +
             '<button type="button" data-act="editar" class="' + (editando ? "on" : "") + '">Edición de agotados: ' + (editando ? "ACTIVADA" : "DESACTIVADA") + '</button>' +
             '<button type="button" data-act="salir">Salir</button>';
-    } else {
-        chip.innerHTML =
-            '<span><i class="fa-solid fa-user-shield"></i> Administradora</span>' +
-            '<button type="button" data-act="entrar">Activar edición de agotados</button>';
     }
 
     chip.addEventListener("click", (e) => {
@@ -109,8 +80,6 @@ function pintarChip() {
             aplicarModo();
         } else if (accion === "salir") {
             signOut(auth);
-        } else if (accion === "entrar") {
-            abrirLoginAdmin();
         }
     });
     document.body.appendChild(chip);
@@ -190,6 +159,3 @@ function revisarHash() {
 }
 window.addEventListener("hashchange", revisarHash);
 setTimeout(revisarHash, 1200);
-
-// Primera pintura (por si la administradora ya inició sesión en el login normal)
-pintarChip();
