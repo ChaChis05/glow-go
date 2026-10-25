@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cambia PEGA_AQUI_EL_UID por el UID de tu cuenta de administradora
+    // (Firebase > Authentication > Usuarios > columna "UID de usuario")
+    function esAdmin() {
+      return request.auth != null && request.auth.uid == 'PEGA_AQUI_EL_UID';
+    }
+
+    // Productos agotados: todos leen, solo la administradora cambia
+    match /config/agotados {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // Contador de pedidos: cualquier cliente con sesión solo puede sumar de 1 en 1
+    match /config/contadorPedidos {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['ultimo'])
+                    && request.resource.data.ultimo == 1001;
+      allow update: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['ultimo'])
+                    && request.resource.data.ultimo == resource.data.ultimo + 1;
+    }
+
+    // Usuarios registrados: cada uno ve y edita lo suyo; la administradora ve todos
+    match /usuarios/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || esAdmin());
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if esAdmin();
+    }
+
+    // Celular -> correo (para poder entrar con el número). Se puede consultar uno a uno, no listar.
+    match /telefonos/{tel} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.correo == request.auth.token.email;
+      allow update, delete: if false;
+    }
+
+    // Pedidos: el cliente crea y ve los suyos; la administradora ve y gestiona todos
+    match /pedidos/{pedidoId} {
+      allow read: if request.auth != null
+                  && (resource.data.uid == request.auth.uid || esAdmin());
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.estado == 'Pendiente a confirmación';
+      allow update, delete: if esAdmin();
+
+      // Guía de envío en PDF
+      match /archivos/{archivoId} {
+        allow read: if request.auth != null
+                    && (esAdmin()
+                        || get(/databases/$(database)/documents/pedidos/$(pedidoId)).data.uid == request.auth.uid);
+        allow write: if esAdmin();
+      }
+    }
+  }
+}
