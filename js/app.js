@@ -1,16 +1,40 @@
 // ==========================================
-// IMÁGENES EN DOS CARPETAS
-// Si una imagen no está en "IMAGENES PRODUCTOS", se busca en "IMAGENES PRODUCTOS 2"
+// IMÁGENES EN DOS CARPETAS (prueba carpetas y extensiones)
 // ==========================================
 (function () {
-    const CARPETA_1 = /IMAGENES(?:%20|\s)PRODUCTOS\//i;
+    const CARPETAS = ["IMAGENES PRODUCTOS", "IMAGENES PRODUCTOS 2"];
+    const EXTS = ["webp", "jpg", "jpeg", "png", "WEBP", "JPG", "JPEG", "PNG"];
+    const RE = /IMAGENES(?:%20|\s)PRODUCTOS(?:(?:%20|\s)2)?\/([^?#]+)$/i;
+    const intentadas = new WeakMap();
+
     document.addEventListener("error", function (e) {
         const img = e.target;
         if (!img || img.tagName !== "IMG") return;
-        const src = img.getAttribute("src") || "";
-        if (!CARPETA_1.test(src)) return;
-        e.stopImmediatePropagation();   // evita que se ponga el logo antes de probar la otra carpeta
-        img.src = src.replace(CARPETA_1, "IMAGENES PRODUCTOS 2/");
+
+        let src = img.getAttribute("src") || "";
+        try { src = decodeURIComponent(src); } catch (err) {}
+        const m = src.match(RE);
+        if (!m) return;                       // no es una imagen de producto
+
+        e.stopImmediatePropagation();         // evita el logo antes de probar todo
+
+        const base = m[1].replace(/\.[^.\/]+$/, "");
+        let vistas = intentadas.get(img);
+        if (!vistas) { vistas = new Set(); intentadas.set(img, vistas); }
+        vistas.add(src);
+
+        for (const carpeta of CARPETAS) {
+            for (const ext of EXTS) {
+                const candidata = carpeta + "/" + base + "." + ext;
+                if (!vistas.has(candidata)) {
+                    vistas.add(candidata);
+                    img.src = candidata;
+                    return;
+                }
+            }
+        }
+        img.onerror = null;
+        img.src = "logo_glow.jpg";            // se agotaron las opciones
     }, true);
 })();
 // ==========================================
