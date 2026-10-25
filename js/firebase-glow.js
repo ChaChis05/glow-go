@@ -1,10 +1,9 @@
 /* ==========================================================
    Glow & Go - firebase-glow.js
    - Lee en tiempo real la lista de productos agotados (Firestore)
-   - Si quien navega es la administradora (sesión de Firebase),
-     la barra verde/roja de cada producto se vuelve un botón para cambiarla
-   - Para entrar como administradora: abrir cualquier página con #admin al final
-     (ej: https://glowgo.site/categorias.html#admin)
+   - Etiqueta flotante para la administradora con interruptor de
+     "Edición de agotados" (ACTIVADA / DESACTIVADA)
+   - También se puede entrar abriendo cualquier página con #admin al final
    Se carga con: <script type="module" src="js/firebase-glow.js"></script>
    DESPUÉS de js/extras.js
    ========================================================== */
@@ -35,15 +34,23 @@ const db = getFirestore(app);
 const refAgotados = doc(db, "config", "agotados");
 
 let listaActual = [];
-let esAdmin = false;
+let esAdmin = false;                                         // sesión de Firebase de la administradora
+let editando = localStorage.getItem("glowEdicion") !== "0";  // interruptor de edición (se recuerda en este dispositivo)
+
+// Si en el login normal de la página entró la administradora, se le ofrece activar la edición
+function esAdminLocal() {
+    const u = (localStorage.getItem("usuarioLogueado") || "").toLowerCase().trim();
+    return u === ADMIN_EMAIL || u === ADMIN_EMAIL.split("@")[0];
+}
 
 /* ---------- Estilos ---------- */
 const estilo = document.createElement("style");
 estilo.textContent = `
-    body.glow-admin .glow-estado{cursor:pointer;outline:2px dashed rgba(122,28,50,.55);outline-offset:2px}
-    body.glow-admin .glow-estado::after{content:" · cambiar";font-weight:600;opacity:.8}
-    #glow-admin-chip{position:fixed;left:1rem;bottom:1rem;z-index:60;background:#7A1C32;color:#fff;border-radius:9999px;padding:.45rem .9rem;font-size:.75rem;font-weight:700;display:flex;gap:.6rem;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,.25)}
-    #glow-admin-chip button{background:#fff;color:#7A1C32;border:0;border-radius:9999px;padding:.2rem .6rem;font-weight:800;font-size:.7rem;cursor:pointer}
+    body.glow-editando .glow-estado{cursor:pointer;outline:2px dashed rgba(122,28,50,.55);outline-offset:2px}
+    body.glow-editando .glow-estado::after{content:" · cambiar";font-weight:600;opacity:.8}
+    #glow-admin-chip{position:fixed;left:1rem;bottom:1rem;z-index:60;max-width:calc(100vw - 6.5rem);background:#7A1C32;color:#fff;border-radius:1rem;padding:.5rem .8rem;font-size:.72rem;font-weight:700;display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+    #glow-admin-chip button{background:#fff;color:#7A1C32;border:0;border-radius:9999px;padding:.25rem .65rem;font-weight:800;font-size:.7rem;cursor:pointer}
+    #glow-admin-chip button.on{background:#dcfce7;color:#166534}
     #glow-admin-modal{position:fixed;inset:0;z-index:400000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1rem}
     #glow-admin-modal .caja{background:#fff;border-radius:1.25rem;max-width:22rem;width:100%;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:inherit}
     #glow-admin-modal h2{font-size:1.1rem;font-weight:900;color:#111827;margin:0 0 .75rem}
@@ -73,27 +80,56 @@ onSnapshot(
     (err) => console.error("No se pudo leer la lista de agotados:", err)
 );
 
-/* ---------- Sesión de administradora ---------- */
-function chipAdmin(mostrar) {
-    let chip = document.getElementById("glow-admin-chip");
-    if (!mostrar) { if (chip) chip.remove(); return; }
-    if (chip) return;
-    chip = document.createElement("div");
+/* ---------- Etiqueta e interruptor de la administradora ---------- */
+function pintarChip() {
+    const previo = document.getElementById("glow-admin-chip");
+    if (previo) previo.remove();
+    if (!esAdmin && !esAdminLocal()) return;
+
+    const chip = document.createElement("div");
     chip.id = "glow-admin-chip";
-    chip.innerHTML = '<span><i class="fa-solid fa-user-shield"></i> Modo administradora</span><button type="button">Salir</button>';
-    chip.querySelector("button").addEventListener("click", () => signOut(auth));
+    if (esAdmin) {
+        chip.innerHTML =
+            '<span><i class="fa-solid fa-user-shield"></i> Administradora</span>' +
+            '<button type="button" data-act="editar" class="' + (editando ? "on" : "") + '">Edición de agotados: ' + (editando ? "ACTIVADA" : "DESACTIVADA") + '</button>' +
+            '<button type="button" data-act="salir">Salir</button>';
+    } else {
+        chip.innerHTML =
+            '<span><i class="fa-solid fa-user-shield"></i> Administradora</span>' +
+            '<button type="button" data-act="entrar">Activar edición de agotados</button>';
+    }
+
+    chip.addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-act]");
+        if (!b) return;
+        const accion = b.dataset.act;
+        if (accion === "editar") {
+            editando = !editando;
+            localStorage.setItem("glowEdicion", editando ? "1" : "0");
+            aplicarModo();
+        } else if (accion === "salir") {
+            signOut(auth);
+        } else if (accion === "entrar") {
+            abrirLoginAdmin();
+        }
+    });
     document.body.appendChild(chip);
+}
+
+function aplicarModo() {
+    document.body.classList.toggle("glow-admin", esAdmin);                 // sesión iniciada (ej: botón del PDF)
+    document.body.classList.toggle("glow-editando", esAdmin && editando);  // barras de estado editables
+    pintarChip();
 }
 
 onAuthStateChanged(auth, (user) => {
     esAdmin = !!user && (user.email || "").toLowerCase() === ADMIN_EMAIL;
-    document.body.classList.toggle("glow-admin", esAdmin);
-    chipAdmin(esAdmin);
+    aplicarModo();
 });
 
 /* ---------- Cambiar Disponible / Agotado ---------- */
 document.addEventListener("click", async (e) => {
-    if (!esAdmin) return;
+    if (!esAdmin || !editando) return;
     const barra = e.target.closest(".glow-estado[data-sku]");
     if (!barra) return;
     e.preventDefault();
@@ -109,7 +145,7 @@ document.addEventListener("click", async (e) => {
     }
 }, true);
 
-/* ---------- Ventana para entrar como administradora (#admin) ---------- */
+/* ---------- Ventana de acceso de la administradora ---------- */
 function abrirLoginAdmin() {
     if (document.getElementById("glow-admin-modal")) return;
     const m = document.createElement("div");
@@ -118,7 +154,7 @@ function abrirLoginAdmin() {
         <div class="caja">
             <h2>Acceso de administradora</h2>
             <div class="err" id="glow-admin-err"></div>
-            <input type="email" id="glow-admin-correo" placeholder="Correo" autocomplete="username">
+            <input type="email" id="glow-admin-correo" placeholder="Correo" autocomplete="username" value="${ADMIN_EMAIL}">
             <input type="password" id="glow-admin-clave" placeholder="Contraseña" autocomplete="current-password">
             <button class="btn" type="button" id="glow-admin-entrar">Entrar</button>
             <button class="cerrar" type="button" id="glow-admin-cerrar">Cancelar</button>
@@ -135,7 +171,10 @@ function abrirLoginAdmin() {
         const clave = m.querySelector("#glow-admin-clave").value;
         try {
             await signInWithEmailAndPassword(auth, correo, clave);
+            editando = true;
+            localStorage.setItem("glowEdicion", "1");
             cerrar();
+            aplicarModo();
         } catch (ex) {
             err.textContent = "Correo o contraseña incorrectos.";
             err.style.display = "block";
@@ -143,11 +182,14 @@ function abrirLoginAdmin() {
     }
     m.querySelector("#glow-admin-entrar").addEventListener("click", entrar);
     m.querySelector("#glow-admin-clave").addEventListener("keydown", (ev) => { if (ev.key === "Enter") entrar(); });
+    m.querySelector("#glow-admin-clave").focus();
 }
 
 function revisarHash() {
     if (location.hash.toLowerCase() === "#admin" && !auth.currentUser) abrirLoginAdmin();
 }
 window.addEventListener("hashchange", revisarHash);
-// Espera a que Firebase confirme si ya había una sesión abierta
 setTimeout(revisarHash, 1200);
+
+// Primera pintura (por si la administradora ya inició sesión en el login normal)
+pintarChip();
