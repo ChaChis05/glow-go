@@ -27,9 +27,16 @@
             z-index: 9999 !important;
             background-color: #ffffff !important;
         }
-        body {
-            padding-top: 96px;
+        body { padding-top: 96px; }
+        .tab-activa { background: #7A1C32 !important; color: #fff !important; }
+        #toast-admin {
+            position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);
+            z-index: 300000; background: #166534; color: #fff; padding: 12px 20px; border-radius: 14px;
+            font-size: 14px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
         }
+        #toast-admin.visible { opacity: 1; transform: translate(-50%, 0); }
+        #toast-admin.error { background: #b91c1c; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
@@ -44,18 +51,14 @@
                 <span class="bg-[#7A1C32] text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider whitespace-nowrap">Panel Admin</span>
             </div>
 
-            <!-- Navegación central con menú desplegable adaptado -->
             <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
                 <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
                 <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
-                
                 <div class="relative">
                     <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors flex items-center focus:outline-none cursor-pointer whitespace-nowrap">
                         Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                     </button>
-                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50">
-                        <!-- Se llena dinámicamente con JS -->
-                    </div>
+                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
                 </div>
             </nav>
 
@@ -63,180 +66,327 @@
                 <a href="index.html" class="text-xs sm:text-sm font-bold text-[#7A1C32] hover:underline flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-store mr-1.5"></i> Ir a la Tienda
                 </a>
+                <button onclick="cerrarSesionUsuario()" class="text-xs sm:text-sm font-bold text-red-600 hover:underline flex items-center whitespace-nowrap cursor-pointer">
+                    <i class="fa-solid fa-right-from-bracket mr-1.5"></i> Salir
+                </button>
             </nav>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-10">
         <div class="barra-estetica rounded-2xl py-5 px-6 mb-8 text-center text-white relative overflow-hidden shadow-md">
-            <h1 class="text-2xl md:text-3xl font-black tracking-wide uppercase">⚙️ Gestión de Pedidos de Clientes</h1>
-            <p class="text-xs text-amber-200 mt-1">Panel exclusivo para Zaidy Cano — Control de estados y carga de guías en PDF</p>
+            <h1 class="text-2xl md:text-3xl font-black tracking-wide uppercase">⚙️ Panel de Administración</h1>
+            <p class="text-xs text-amber-200 mt-1">Pedidos de clientes, guías de envío y usuarios registrados — guardados de forma permanente</p>
         </div>
 
-        <div id="tabla-pedidos-admin" class="space-y-6">
-            <!-- Se llena con JavaScript -->
+        <!-- Acceso (se muestra solo si no hay sesión de administradora) -->
+        <div id="admin-acceso" class="hidden text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
+            <i class="fa-solid fa-lock text-6xl text-gray-300 mb-4"></i>
+            <h2 id="admin-acceso-titulo" class="text-xl font-bold text-gray-700 mb-2"></h2>
+            <p id="admin-acceso-texto" class="text-gray-500 text-sm mb-6"></p>
+            <a id="admin-acceso-enlace" href="login.html?volver=admin-pedidos.html" class="inline-block bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold px-6 py-3 rounded-xl transition-colors text-sm shadow-md">Iniciar sesión</a>
         </div>
 
-        <div id="admin-sin-pedidos" class="hidden text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
-            <i class="fa-solid fa-clipboard-list text-6xl text-gray-300 mb-4"></i>
-            <h2 class="text-xl font-bold text-gray-700 mb-2">No hay pedidos registrados en el sistema</h2>
-            <p class="text-gray-500 text-sm">Los pedidos que realicen los clientes aparecerán aquí automáticamente.</p>
+        <!-- Panel -->
+        <div id="admin-panel" class="hidden">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Pedidos</p><p id="stat-pedidos" class="text-2xl font-black text-[#7A1C32]">0</p></div>
+                <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Por confirmar</p><p id="stat-pendientes" class="text-2xl font-black text-amber-600">0</p></div>
+                <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Enviados</p><p id="stat-enviados" class="text-2xl font-black text-green-600">0</p></div>
+                <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Usuarios registrados</p><p id="stat-usuarios" class="text-2xl font-black text-gray-800">0</p></div>
+            </div>
+
+            <div class="flex gap-2 mb-6">
+                <button id="tab-pedidos" onclick="mostrarTab('pedidos')" class="tab-activa px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-box mr-1.5"></i> Pedidos</button>
+                <button id="tab-usuarios" onclick="mostrarTab('usuarios')" class="px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-users mr-1.5"></i> Usuarios</button>
+            </div>
+
+            <section id="seccion-pedidos">
+                <div id="tabla-pedidos-admin" class="space-y-6"></div>
+                <div id="admin-sin-pedidos" class="hidden text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
+                    <i class="fa-solid fa-clipboard-list text-6xl text-gray-300 mb-4"></i>
+                    <h2 class="text-xl font-bold text-gray-700 mb-2">No hay pedidos registrados en el sistema</h2>
+                    <p class="text-gray-500 text-sm">Los pedidos que realicen los clientes aparecerán aquí automáticamente.</p>
+                </div>
+            </section>
+
+            <section id="seccion-usuarios" class="hidden">
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+                    <input id="filtro-usuarios" type="text" placeholder="Buscar por nombre, correo o celular..." class="w-full mb-4 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead>
+                                <tr class="text-gray-400 uppercase border-b">
+                                    <th class="py-2 pr-3">Nombre</th>
+                                    <th class="py-2 pr-3">Correo</th>
+                                    <th class="py-2 pr-3">Celular</th>
+                                    <th class="py-2 pr-3">Registro</th>
+                                    <th class="py-2 pr-3">Último ingreso</th>
+                                    <th class="py-2 text-center">Pedidos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-usuarios"></tbody>
+                        </table>
+                    </div>
+                    <p id="usuarios-vacio" class="hidden text-center text-sm text-gray-400 py-8">Todavía no hay usuarios registrados.</p>
+                </div>
+            </section>
         </div>
     </main>
 
-    <!-- SCRIPT DE SEGURIDAD Y GESTIÓN -->
-    <script src="js/app.js"></script>
-    <script>
-        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
-        const PASSWORD_ADMIN = "chachis2905";
+    <div id="toast-admin" role="status" aria-live="polite"></div>
 
-        function convertirPrecioANumero(precioStr) {
-            if (!precioStr) return 0;
-            let limpio = String(precioStr).replace(/[^0-9]/g, "");
-            return parseFloat(limpio) || 0;
+    <script src="js/app.js"></script>
+    <script type="module">
+        import {
+            db, usuarioListo, esAdminUsuario, esc, soloDigitos,
+            collection, query, orderBy, limit, onSnapshot, doc, getDoc, setDoc, updateDoc, serverTimestamp
+        } from "./js/glow-fb.js";
+
+        const $ = (id) => document.getElementById(id);
+        let pedidos = [];
+        let usuarios = [];
+        let renderPendiente = false;
+
+        function convertirPrecioANumero(p) { return parseFloat(String(p || "").replace(/[^0-9]/g, "")) || 0; }
+
+        let toastTimer;
+        function aviso(msg, error) {
+            const t = $("toast-admin");
+            t.textContent = msg;
+            t.classList.toggle("error", !!error);
+            t.classList.add("visible");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove("visible"), 2200);
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            let usuarioLogueado = localStorage.getItem("usuarioLogueado");
+        function fechaTs(ts) {
+            try { return ts && ts.toDate ? ts.toDate().toLocaleString("es-CO") : "—"; } catch (e) { return "—"; }
+        }
 
-            if (!usuarioLogueado || usuarioLogueado.toLowerCase().trim() !== CORREO_ADMIN) {
-                let passwordIngresada = prompt("🔒 Área protegida. Por favor ingresa la contraseña de administrador:");
-                
-                if (passwordIngresada === PASSWORD_ADMIN) {
-                    localStorage.setItem("usuarioLogueado", CORREO_ADMIN);
-                } else {
-                    alert("Contraseña incorrecta. Acceso denegado.");
-                    window.location.href = "index.html";
-                    return;
-                }
-            }
+        /* ---------- Pestañas ---------- */
+        window.mostrarTab = function (cual) {
+            $("seccion-pedidos").classList.toggle("hidden", cual !== "pedidos");
+            $("seccion-usuarios").classList.toggle("hidden", cual !== "usuarios");
+            $("tab-pedidos").classList.toggle("tab-activa", cual === "pedidos");
+            $("tab-usuarios").classList.toggle("tab-activa", cual === "usuarios");
+        };
 
-            renderizarPedidosAdmin();
-        });
+        /* ---------- Pedidos ---------- */
+        function estadoBadge(estado) {
+            let c = "bg-amber-100 text-amber-800";
+            if (estado && estado.includes("Confirmado")) c = "bg-blue-100 text-blue-800";
+            if (estado && (estado.includes("Enviado") || estado.includes("Guía"))) c = "bg-green-100 text-green-800";
+            return c;
+        }
 
-        function renderizarPedidosAdmin() {
-            const pedidos = JSON.parse(localStorage.getItem("glow_pedidos")) || [];
-            const contenedor = document.getElementById("tabla-pedidos-admin");
-            const sinPedidos = document.getElementById("admin-sin-pedidos");
+        function renderizarPedidos() {
+            const cont = $("tabla-pedidos-admin");
+            const vacio = $("admin-sin-pedidos");
 
-            if (pedidos.length === 0) {
-                sinPedidos.classList.remove("hidden");
-                contenedor.innerHTML = "";
-                return;
-            }
+            $("stat-pedidos").textContent = pedidos.length;
+            $("stat-pendientes").textContent = pedidos.filter(p => (p.estado || "").startsWith("Pendiente")).length;
+            $("stat-enviados").textContent = pedidos.filter(p => (p.estado || "").includes("Enviado")).length;
 
-            sinPedidos.classList.add("hidden");
-            contenedor.innerHTML = pedidos.slice().reverse().map((pedido, indexReal) => {
-                const realIndex = pedidos.length - 1 - indexReal;
-                const itemsArray = pedido.items || pedido.productos || [];
+            if (!pedidos.length) { vacio.classList.remove("hidden"); cont.innerHTML = ""; return; }
+            vacio.classList.add("hidden");
 
-                let badgeColor = "bg-amber-100 text-amber-800";
-                if (pedido.estado && pedido.estado.includes("Confirmado")) badgeColor = "bg-blue-100 text-blue-800";
-                if (pedido.estado && (pedido.estado.includes("Enviado") || pedido.estado.includes("Guía"))) badgeColor = "bg-green-100 text-green-800";
+            // Conservar lo que se esté escribiendo en los campos de guía
+            const escrito = {};
+            cont.querySelectorAll("input[data-guia]").forEach(i => { escrito[i.dataset.guia] = i.value; });
 
+            cont.innerHTML = pedidos.map(p => {
+                const id = esc(p.id);
+                const items = p.items || p.productos || [];
+                const tel = soloDigitos(p.telefonoCliente);
+                const guia = escrito[String(p.id)] !== undefined ? escrito[String(p.id)] : (p.guiaTexto || p.guia || "");
                 return `
-                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-2">
-                            <div>
-                                <span class="text-xs font-bold text-gray-400">PEDIDO #${pedido.id} — Cliente: <strong class="text-gray-800">${pedido.usuario || pedido.nombreCliente}</strong></span>
-                                <p class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1"></i> ${pedido.fecha || 'Fecha no registrada'}</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeColor}">${pedido.estado || 'Pendiente'}</span>
-                                <select onchange="actualizarEstado(${realIndex}, this.value)" class="text-xs font-bold px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 cursor-pointer focus:ring-2 focus:ring-[#7A1C32]">
-                                    <option value="Pendiente a confirmación" ${pedido.estado === 'Pendiente a confirmación' ? 'selected' : ''}>Pendiente a confirmación</option>
-                                    <option value="Confirmado - Pendiente de guía" ${pedido.estado === 'Confirmado - Pendiente de guía' ? 'selected' : ''}>Confirmado - Pendiente de guía</option>
-                                    <option value="Enviado con guía" ${pedido.estado === 'Enviado con guía' ? 'selected' : ''}>Enviado con guía</option>
-                                </select>
-                            </div>
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-2">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400">PEDIDO #${id} — Cliente: <strong class="text-gray-800">${esc(p.usuario || p.nombreCliente)}</strong></span>
+                            <p class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1"></i> ${esc(p.fecha || 'Fecha no registrada')}</p>
                         </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${estadoBadge(p.estado)}">${esc(p.estado || 'Pendiente')}</span>
+                            <select onchange="actualizarEstado('${id}', this.value)" class="text-xs font-bold px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 cursor-pointer focus:ring-2 focus:ring-[#7A1C32]">
+                                ${["Pendiente a confirmación", "Confirmado - Pendiente de guía", "Enviado con guía"].map(e =>
+                                    `<option value="${esc(e)}" ${p.estado === e ? "selected" : ""}>${esc(e)}</option>`).join("")}
+                            </select>
+                        </div>
+                    </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
-                            <div>
-                                <p><strong>Nombre:</strong> ${pedido.nombreCliente || 'No especificado'}</p>
-                                <p><strong>Teléfono:</strong> <a href="https://wa.me/57${pedido.telefonoCliente || ''}" target="_blank" class="text-green-600 font-bold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${pedido.telefonoCliente || 'N/A'}</a></p>
-                                <p><strong>Correo:</strong> ${pedido.usuario || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p><strong>Destino:</strong> ${pedido.ubicacion || 'No especificada'}</p>
-                                <p><strong>Dirección:</strong> ${pedido.direccion || 'N/A'}</p>
-                                <p><strong>Espec. vivienda:</strong> ${pedido.especificaciones || 'Ninguna'}</p>
-                            </div>
-                            <div>
-                                <p><strong>Total:</strong> <span class="text-[#7A1C32] font-black text-base">$${(pedido.total || 0).toLocaleString("es-CO")}</span></p>
-                                
-                                <!-- Sección para Cargar Guía PDF y Número -->
-                                <div class="mt-2 space-y-2 bg-red-50/50 p-3 rounded-2xl border border-red-100">
-                                    <label class="block text-xs font-bold text-red-700">Cargar Guía de Envío (PDF + Número):</label>
-                                    <input type="text" id="input-guia-texto-${realIndex}" value="${pedido.guiaTexto || ''}" placeholder="Número de guía..." class="text-xs px-3 py-2 border border-gray-200 rounded-xl w-full bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                                    
-                                    <div class="flex items-center gap-2">
-                                        <input type="file" id="input-guia-pdf-${realIndex}" accept="application/pdf" class="text-xs w-full text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-red-600 file:text-white hover:file:bg-red-700 cursor-pointer">
-                                        <button onclick="guardarGuiaConPDF(${realIndex})" class="bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-colors cursor-pointer flex-shrink-0 shadow-sm">
-                                            Guardar Guía
-                                        </button>
-                                    </div>
-                                    ${pedido.guiaPdf ? `<p class="text-[10px] text-green-700 font-bold mt-1"><i class="fa-solid fa-circle-check"></i> PDF de guía cargado correctamente. <a href="${pedido.guiaPdf}" target="_blank" download="Guia_Envio_${pedido.id}.pdf" class="underline text-red-700 ml-1">Ver PDF</a></p>` : ''}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
+                        <div>
+                            <p><strong>Nombre:</strong> ${esc(p.nombreCliente || 'No especificado')}</p>
+                            <p><strong>Teléfono:</strong> ${tel ? `<a href="https://wa.me/57${tel}" target="_blank" rel="noopener" class="text-green-600 font-bold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${esc(p.telefonoCliente)}</a>` : 'N/A'}</p>
+                            <p><strong>Correo:</strong> ${esc(p.correoContacto || p.usuario || 'N/A')}</p>
+                        </div>
+                        <div>
+                            <p><strong>Destino:</strong> ${esc(p.ubicacion || 'No especificada')}</p>
+                            <p><strong>Dirección:</strong> ${esc(p.direccion || 'N/A')}</p>
+                            <p><strong>Código postal:</strong> ${esc(p.codigoPostal || 'N/A')}</p>
+                            <p><strong>Espec. vivienda:</strong> ${esc(p.especificaciones || 'Ninguna')}</p>
+                            <p><strong>Observaciones:</strong> ${esc(p.observaciones || 'Ninguna')}</p>
+                        </div>
+                        <div>
+                            <p><strong>Total:</strong> <span class="text-[#7A1C32] font-black text-base">$${(Number(p.total) || 0).toLocaleString("es-CO")}</span></p>
+                            <div class="mt-2 space-y-2 bg-red-50/50 p-3 rounded-2xl border border-red-100">
+                                <label class="block text-xs font-bold text-red-700">Cargar Guía de Envío (PDF + Número):</label>
+                                <input type="text" id="guia-texto-${id}" data-guia="${id}" value="${esc(guia)}" placeholder="Número de guía..." class="text-xs px-3 py-2 border border-gray-200 rounded-xl w-full bg-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <div class="flex items-center gap-2">
+                                    <input type="file" id="guia-pdf-${id}" accept="application/pdf" class="text-xs w-full text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-red-600 file:text-white hover:file:bg-red-700 cursor-pointer">
+                                    <button onclick="guardarGuia('${id}')" class="bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-colors cursor-pointer flex-shrink-0 shadow-sm">Guardar Guía</button>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="border-t pt-3">
-                            <p class="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Productos solicitados:</p>
-                            <div class="space-y-1">
-                                ${itemsArray.map(item => {
-                                    let pNum = convertirPrecioANumero(item.precio);
-                                    return `
-                                        <div class="text-xs text-gray-600 flex justify-between bg-gray-50 p-2 rounded-lg">
-                                            <span>• ${item.nombre} (SKU:${item.sku || 'N/A'}) x${item.cantidad}</span> <span class="font-semibold">$${(pNum * item.cantidad).toLocaleString("es-CO")}</span>
-                                        </div>
-                                    `;
-                                }).join('')}
+                                ${p.tieneGuiaPdf ? `<p class="text-[10px] text-green-700 font-bold mt-1"><i class="fa-solid fa-circle-check"></i> PDF de guía cargado. <button onclick="verGuiaPdf('${id}')" class="underline text-red-700 ml-1 cursor-pointer">Ver PDF</button></p>` : ''}
                             </div>
                         </div>
                     </div>
-                `;
+
+                    <div class="border-t pt-3">
+                        <p class="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Productos solicitados:</p>
+                        <div class="space-y-1">
+                            ${items.map(item => {
+                                const pNum = convertirPrecioANumero(item.precio);
+                                const cant = parseInt(item.cantidad, 10) || 1;
+                                return `<div class="text-xs text-gray-600 flex justify-between bg-gray-50 p-2 rounded-lg">
+                                    <span>• ${esc(item.nombre)} (SKU:${esc(item.sku || 'N/A')}) x${cant}</span>
+                                    <span class="font-semibold">$${(pNum * cant).toLocaleString("es-CO")}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
         }
 
-        window.actualizarEstado = function(index, nuevoEstado) {
-            let pedidos = JSON.parse(localStorage.getItem("glow_pedidos")) || [];
-            pedidos[index].estado = nuevoEstado;
-            localStorage.setItem("glow_pedidos", JSON.stringify(pedidos));
-            renderizarPedidosAdmin();
-            alert("¡Estado del pedido actualizado con éxito!");
+        // No redibujar mientras se escribe una guía o se elige un PDF
+        function hayEdicionEnCurso() {
+            const a = document.activeElement;
+            if (a && a.closest && a.closest("#tabla-pedidos-admin") && ["INPUT", "SELECT", "TEXTAREA"].includes(a.tagName)) return true;
+            return [...document.querySelectorAll("#tabla-pedidos-admin input[type=file]")].some(f => f.files && f.files.length);
+        }
+        function renderizarSeguro() {
+            if (hayEdicionEnCurso()) { renderPendiente = true; return; }
+            renderPendiente = false;
+            renderizarPedidos();
+        }
+        setInterval(() => { if (renderPendiente) renderizarSeguro(); }, 2000);
+
+        window.actualizarEstado = async function (id, nuevoEstado) {
+            try {
+                await updateDoc(doc(db, "pedidos", String(id)), { estado: nuevoEstado });
+                aviso("¡Estado del pedido actualizado!");
+            } catch (e) { console.error(e); aviso("No se pudo actualizar el estado.", true); }
         };
 
-        window.guardarGuiaConPDF = function(index) {
-            let pedidos = JSON.parse(localStorage.getItem("glow_pedidos")) || [];
-            const textoGuia = document.getElementById(`input-guia-texto-${index}`).value.trim();
-            const inputFile = document.getElementById(`input-guia-pdf-${index}`);
+        function leerArchivo(archivo) {
+            return new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = () => res(r.result);
+                r.onerror = () => rej(r.error);
+                r.readAsDataURL(archivo);
+            });
+        }
 
-            pedidos[index].guiaTexto = textoGuia;
-            pedidos[index].guia = textoGuia;
-
-            if (inputFile.files && inputFile.files[0]) {
-                const archivo = inputFile.files[0];
-                const reader = new FileReader();
-
-                reader.onload = function(e) {
-                    pedidos[index].guiaPdf = e.target.result;
-                    pedidos[index].estado = "Enviado con guía";
-                    localStorage.setItem("glow_pedidos", JSON.stringify(pedidos));
-                    alert("¡Guía y archivo PDF cargados y guardados con éxito!");
-                    renderizarPedidosAdmin();
-                };
-
-                reader.readAsDataURL(archivo);
-            } else {
-                if (textoGuia) {
-                    pedidos[index].estado = "Enviado con guía";
+        window.guardarGuia = async function (id) {
+            const texto = $(`guia-texto-${id}`).value.trim();
+            const archivo = ($(`guia-pdf-${id}`).files || [])[0];
+            const cambios = { guia: texto, guiaTexto: texto };
+            try {
+                if (archivo) {
+                    if (archivo.type !== "application/pdf") { aviso("El archivo debe ser un PDF.", true); return; }
+                    if (archivo.size > 650 * 1024) { aviso("El PDF pesa " + Math.round(archivo.size / 1024) + " KB. El máximo es 650 KB; comprímelo e inténtalo de nuevo.", true); return; }
+                    const datos = await leerArchivo(archivo);
+                    await setDoc(doc(db, "pedidos", String(id), "archivos", "guia"), { datos: datos, nombre: archivo.name, subidoEn: serverTimestamp() });
+                    cambios.tieneGuiaPdf = true;
+                    cambios.estado = "Enviado con guía";
+                } else if (texto) {
+                    cambios.estado = "Enviado con guía";
                 }
-                localStorage.setItem("glow_pedidos", JSON.stringify(pedidos));
-                alert("¡Número de guía guardado correctamente!");
-                renderizarPedidosAdmin();
+                await updateDoc(doc(db, "pedidos", String(id)), cambios);
+                renderPendiente = true;
+                aviso("¡Guía guardada con éxito!");
+            } catch (e) { console.error(e); aviso("No se pudo guardar la guía.", true); }
+        };
+
+        window.verGuiaPdf = async function (id) {
+            const ventana = window.open("", "_blank");   // se abre con el clic para que no la bloqueen
+            try {
+                const snap = await getDoc(doc(db, "pedidos", String(id), "archivos", "guia"));
+                if (!snap.exists()) throw new Error("sin archivo");
+                const blob = await (await fetch(snap.data().datos)).blob();
+                const url = URL.createObjectURL(blob);
+                if (ventana) ventana.location.href = url; else window.location.href = url;
+            } catch (e) {
+                console.error(e);
+                if (ventana) ventana.close();
+                aviso("No se pudo abrir el PDF.", true);
             }
         };
+
+        /* ---------- Usuarios ---------- */
+        function renderizarUsuarios() {
+            const filtro = $("filtro-usuarios").value.trim().toLowerCase();
+            const porUid = {};
+            pedidos.forEach(p => { porUid[p.uid] = (porUid[p.uid] || 0) + 1; });
+
+            const lista = usuarios.filter(u =>
+                !filtro || [u.nombre, u.correo, u.telefono].some(v => String(v || "").toLowerCase().includes(filtro))
+            );
+            $("stat-usuarios").textContent = usuarios.length;
+            $("usuarios-vacio").classList.toggle("hidden", usuarios.length > 0);
+
+            $("tabla-usuarios").innerHTML = lista.map(u => {
+                const tel = soloDigitos(u.telefono);
+                return `<tr class="border-b border-gray-50">
+                    <td class="py-2.5 pr-3 font-bold text-gray-800">${esc(u.nombre || "—")}</td>
+                    <td class="py-2.5 pr-3">${esc(u.correo || "—")}</td>
+                    <td class="py-2.5 pr-3">${tel ? `<a href="https://wa.me/57${tel}" target="_blank" rel="noopener" class="text-green-600 font-bold hover:underline">${esc(u.telefono)}</a>` : "—"}</td>
+                    <td class="py-2.5 pr-3 text-gray-500">${esc(fechaTs(u.fechaRegistro))}</td>
+                    <td class="py-2.5 pr-3 text-gray-500">${esc(fechaTs(u.ultimoIngreso))}</td>
+                    <td class="py-2.5 text-center font-black text-[#7A1C32]">${porUid[u.uid] || 0}</td>
+                </tr>`;
+            }).join("");
+        }
+        $("filtro-usuarios").addEventListener("input", renderizarUsuarios);
+
+        /* ---------- Acceso ---------- */
+        function mostrarAcceso(titulo, texto, conBoton) {
+            $("admin-acceso-titulo").textContent = titulo;
+            $("admin-acceso-texto").textContent = texto;
+            $("admin-acceso-enlace").classList.toggle("hidden", !conBoton);
+            $("admin-acceso").classList.remove("hidden");
+        }
+
+        const user = await usuarioListo;
+        if (!user) {
+            mostrarAcceso("Área protegida", "Inicia sesión con la cuenta de administradora para ver este panel.", true);
+        } else if (!esAdminUsuario(user)) {
+            mostrarAcceso("Acceso denegado", "Esta cuenta no tiene permisos de administradora. Te llevamos al inicio...", false);
+            setTimeout(() => { location.href = "index.html"; }, 2500);
+        } else {
+            $("admin-panel").classList.remove("hidden");
+
+            onSnapshot(
+                query(collection(db, "pedidos"), orderBy("numero", "desc"), limit(300)),
+                (snap) => {
+                    pedidos = snap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));
+                    renderizarSeguro();
+                    renderizarUsuarios();
+                },
+                (err) => { console.error(err); aviso("No se pudieron leer los pedidos. ¿Publicaste las reglas de Firestore?", true); }
+            );
+
+            onSnapshot(
+                query(collection(db, "usuarios"), orderBy("fechaRegistro", "desc"), limit(1000)),
+                (snap) => {
+                    usuarios = snap.docs.map(d => ({ ...d.data(), uid: d.id }));
+                    renderizarUsuarios();
+                },
+                (err) => { console.error(err); aviso("No se pudieron leer los usuarios.", true); }
+            );
+        }
     </script>
 </body>
 </html>
