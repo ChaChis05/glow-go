@@ -1,4 +1,19 @@
 // ==========================================
+// IMÁGENES EN DOS CARPETAS
+// Si una imagen no está en "IMAGENES PRODUCTOS", se busca en "IMAGENES PRODUCTOS 2"
+// ==========================================
+(function () {
+    const CARPETA_1 = /IMAGENES(?:%20|\s)PRODUCTOS\//i;
+    document.addEventListener("error", function (e) {
+        const img = e.target;
+        if (!img || img.tagName !== "IMG") return;
+        const src = img.getAttribute("src") || "";
+        if (!CARPETA_1.test(src)) return;
+        e.stopImmediatePropagation();   // evita que se ponga el logo antes de probar la otra carpeta
+        img.src = src.replace(CARPETA_1, "IMAGENES PRODUCTOS 2/");
+    }, true);
+})();
+// ==========================================
 // 1. CONFIGURACIÓN Y LISTADO OFICIAL DE CATEGORÍAS (EN MAYÚSCULAS)
 // ==========================================
 const categoriasOficiales = [
