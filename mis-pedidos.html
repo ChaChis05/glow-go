@@ -184,107 +184,7 @@
                 }
             }
 
-            if (!usuarioLimpio) {
-                alert("Debes iniciar sesión para ver tus pedidos.");
-                window.location.href = "login.html";
-                return;
-            }
-
-            const pedidos = JSON.parse(localStorage.getItem("glow_pedidos")) || [];
-            const misPedidos = pedidos.filter(p => p.usuario.toLowerCase().trim() === usuarioLimpio).reverse();
-
-            const contenedor = document.getElementById("lista-mis-pedidos");
-            const sinPedidos = document.getElementById("sin-pedidos");
-
-            const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-            const cartCount = document.getElementById("cart-count");
-            if (cartCount) cartCount.textContent = carrito.reduce((sum, item) => sum + item.cantidad, 0);
-
-            if (misPedidos.length === 0) {
-                sinPedidos.classList.remove("hidden");
-                return;
-            }
-
-            contenedor.innerHTML = misPedidos.map(pedido => {
-                let badgeColor = "bg-amber-100 text-amber-800";
-                if (pedido.estado && pedido.estado.includes("Confirmado")) badgeColor = "bg-blue-100 text-blue-800";
-                if (pedido.estado && (pedido.estado.includes("Enviado") || pedido.estado.includes("Guía"))) badgeColor = "bg-green-100 text-green-800";
-
-                const itemsArray = pedido.items || pedido.productos || [];
-
-                return `
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all">
-                        <!-- Línea Básica -->
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                            <div class="flex items-center space-x-4">
-                                <span class="bg-[#7A1C32]/10 text-[#7A1C32] font-black px-3 py-1.5 rounded-xl text-sm">#${pedido.id}</span>
-                                <div>
-                                    <p class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1"></i> ${pedido.fecha || 'Fecha no registrada'}</p>
-                                    <p class="text-sm font-bold text-gray-900">Total: $${(pedido.total || 0).toLocaleString("es-CO")}</p>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
-                                <span class="px-3 py-1 rounded-full text-xs font-extrabold ${badgeColor}">
-                                    ${pedido.estado || 'Pendiente'}
-                                </span>
-                                <!-- Botón Ver con el Ojo -->
-                                <button onclick="toggleDetallePedido(${pedido.id})" class="bg-gray-100 hover:bg-[#7A1C32] hover:text-white text-gray-700 w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer shadow-xs" title="Ver detalles">
-                                    <i class="fa-solid fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Información Detallada (Oculta por defecto) -->
-                        <div id="detalle-${pedido.id}" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-700 bg-gray-50 p-4 rounded-xl">
-                                <div>
-                                    <p><strong>Cliente:</strong> ${pedido.nombreCliente || 'No especificado'}</p>
-                                    <p><strong>Teléfono:</strong> ${pedido.telefonoCliente || 'No especificado'}</p>
-                                    <p><strong>Ubicación:</strong> ${pedido.ubicacion || 'No especificada'}</p>
-                                </div>
-                                <div>
-                                    <p><strong>Dirección:</strong> ${pedido.direccion || 'No especificada'}</p>
-                                    <p><strong>Espec. Vivienda:</strong> ${pedido.especificaciones || 'Ninguna'}</p>
-                                    <p><strong>Número de Guía de Envío:</strong> <span class="font-mono text-[#7A1C32] font-bold">${pedido.guia || 'Pendiente de asignar por el administrador'}</span></p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Productos del pedido:</p>
-                                <div class="space-y-2">
-                                    ${itemsArray.map(item => {
-                                        let pNum = convertirPrecioANumero(item.precio);
-                                        return `
-                                            <div class="text-xs text-gray-700 flex justify-between items-center bg-white p-2.5 rounded-lg border border-gray-100">
-                                                <div>
-                                                    <span class="font-bold text-[#7A1C32]">[${item.sku || 'N/A'}]</span> 
-                                                    <span>${item.nombre}</span> 
-                                                    <span class="text-gray-400">(x${item.cantidad})</span> </div> <span class="font-black">$${(pNum * item.cantidad).toLocaleString("es-CO")}</span>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            </div>
-
-                            <!-- Botón Descargar PDF -->
-                            <div class="pt-2 flex justify-end">
-                                <button onclick='descargarPDFPedido(${JSON.stringify(pedido)})' class="bg-[#7A1C32] hover:bg-[#621628] text-white text-xs font-extrabold px-4 py-2.5 rounded-xl flex items-center shadow-md transition-all cursor-pointer">
-                                    <i class="fa-solid fa-file-pdf mr-2 text-sm"></i> Descargar Comprobante PDF
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         });
-
-        window.toggleDetallePedido = function(id) {
-            const detalle = document.getElementById(`detalle-${id}`);
-            if (detalle) {
-                detalle.classList.toggle("hidden");
-            }
-        };
 
         window.descargarPDFPedido = function(pedido) {
             const itemsArray = pedido.items || pedido.productos || [];
@@ -382,5 +282,143 @@
             html2pdf().from(element).set(opt).save();
         };
     </script>
+    <script type="module">
+        import { auth, db, usuarioListo, collection, query, where, onSnapshot, esc } from "./js/glow-fb.js";
+
+        const pedidosPorId = {};
+        const abiertos = new Set();
+
+        // Texto seguro para el comprobante PDF
+        function sanear(v) {
+            if (typeof v === "string") return esc(v);
+            if (Array.isArray(v)) return v.map(sanear);
+            if (v && typeof v === "object" && !(typeof v.toDate === "function")) {
+                const o = {};
+                Object.keys(v).forEach(k => { o[k] = sanear(v[k]); });
+                return o;
+            }
+            return v;
+        }
+
+        window.toggleDetallePedido = function(id) {
+            const detalle = document.getElementById(`detalle-${id}`);
+            if (!detalle) return;
+            detalle.classList.toggle("hidden");
+            if (detalle.classList.contains("hidden")) abiertos.delete(String(id)); else abiertos.add(String(id));
+        };
+
+        window.descargarPDFPorId = function(id) {
+            const p = pedidosPorId[id];
+            if (p) window.descargarPDFPedido(sanear(p));
+        };
+
+        function actualizarContadorCarrito() {
+            let carrito = [];
+            try { carrito = JSON.parse(localStorage.getItem("carrito")) || []; } catch (e) { carrito = []; }
+            const cartCount = document.getElementById("cart-count");
+            if (cartCount) cartCount.textContent = carrito.reduce((sum, item) => sum + (parseInt(item.cantidad, 10) || 0), 0);
+        }
+
+        function tarjeta(pedido) {
+            let badgeColor = "bg-amber-100 text-amber-800";
+            if (pedido.estado && pedido.estado.includes("Confirmado")) badgeColor = "bg-blue-100 text-blue-800";
+            if (pedido.estado && (pedido.estado.includes("Enviado") || pedido.estado.includes("Guía"))) badgeColor = "bg-green-100 text-green-800";
+
+            const itemsArray = pedido.items || pedido.productos || [];
+            const id = esc(pedido.id);
+            const abierto = abiertos.has(String(pedido.id));
+
+            return `
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="flex items-center space-x-4">
+                            <span class="bg-[#7A1C32]/10 text-[#7A1C32] font-black px-3 py-1.5 rounded-xl text-sm">#${id}</span>
+                            <div>
+                                <p class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1"></i> ${esc(pedido.fecha || 'Fecha no registrada')}</p>
+                                <p class="text-sm font-bold text-gray-900">Total: $${(Number(pedido.total) || 0).toLocaleString("es-CO")}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${badgeColor}">${esc(pedido.estado || 'Pendiente')}</span>
+                            <button onclick="toggleDetallePedido('${id}')" class="bg-gray-100 hover:bg-[#7A1C32] hover:text-white text-gray-700 w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer" title="Ver detalles">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="detalle-${id}" class="${abierto ? '' : 'hidden'} mt-4 pt-4 border-t border-gray-100 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-700 bg-gray-50 p-4 rounded-xl">
+                            <div>
+                                <p><strong>Cliente:</strong> ${esc(pedido.nombreCliente || 'No especificado')}</p>
+                                <p><strong>Teléfono:</strong> ${esc(pedido.telefonoCliente || 'No especificado')}</p>
+                                <p><strong>Ubicación:</strong> ${esc(pedido.ubicacion || 'No especificada')}</p>
+                            </div>
+                            <div>
+                                <p><strong>Dirección:</strong> ${esc(pedido.direccion || 'No especificada')}</p>
+                                <p><strong>Espec. Vivienda:</strong> ${esc(pedido.especificaciones || 'Ninguna')}</p>
+                                <p><strong>Número de Guía de Envío:</strong> <span class="font-mono text-[#7A1C32] font-bold">${esc(pedido.guia || 'Pendiente de asignar por el administrador')}</span></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Productos del pedido:</p>
+                            <div class="space-y-2">
+                                ${itemsArray.map(item => {
+                                    const pNum = convertirPrecioANumero(item.precio);
+                                    const cant = parseInt(item.cantidad, 10) || 1;
+                                    return `
+                                        <div class="text-xs text-gray-700 flex justify-between items-center bg-white p-2.5 rounded-lg border border-gray-100">
+                                            <div>
+                                                <span class="font-bold text-[#7A1C32]">[${esc(item.sku || 'N/A')}]</span>
+                                                <span>${esc(item.nombre)}</span>
+                                                <span class="text-gray-400">(x${cant})</span>
+                                            </div>
+                                            <span class="font-black">$${(pNum * cant).toLocaleString("es-CO")}</span>
+                                        </div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex justify-end">
+                            <button onclick="descargarPDFPorId('${id}')" class="bg-[#7A1C32] hover:bg-[#621628] text-white text-xs font-extrabold px-4 py-2.5 rounded-xl flex items-center shadow-md transition-all cursor-pointer">
+                                <i class="fa-solid fa-file-pdf mr-2 text-sm"></i> Descargar Comprobante PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        actualizarContadorCarrito();
+
+        const user = await usuarioListo;
+        if (!user) {
+            alert("Debes iniciar sesión para ver tus pedidos.");
+            location.href = "login.html?volver=mis-pedidos.html";
+        } else {
+            const contenedor = document.getElementById("lista-mis-pedidos");
+            const sinPedidos = document.getElementById("sin-pedidos");
+
+            // Pedidos guardados en tu cuenta: se ven desde cualquier dispositivo y se actualizan solos
+            onSnapshot(
+                query(collection(db, "pedidos"), where("uid", "==", user.uid)),
+                (snap) => {
+                    const lista = snap.docs.map(d => d.data()).sort((a, b) => (Number(b.numero) || 0) - (Number(a.numero) || 0));
+                    lista.forEach(p => { pedidosPorId[String(p.id)] = p; });
+                    if (lista.length === 0) {
+                        contenedor.innerHTML = "";
+                        sinPedidos.classList.remove("hidden");
+                        return;
+                    }
+                    sinPedidos.classList.add("hidden");
+                    contenedor.innerHTML = lista.map(tarjeta).join("");
+                },
+                (err) => {
+                    console.error(err);
+                    contenedor.innerHTML = '<div class="bg-white rounded-2xl p-6 text-center text-sm text-red-600 font-bold border border-red-100">No se pudieron cargar tus pedidos. Revisa tu conexión e inténtalo de nuevo.</div>';
+                }
+            );
+        }
+    </script>
 </body>
 </html>
+
