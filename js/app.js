@@ -136,12 +136,12 @@ async function cargarProductosDesdeExcel() {
             };
         });
         
-        // Quitar productos con la misma referencia (SKU) repetida
-        const skusVistos = new Set();
+               // Quitar solo los repetidos dentro de la MISMA categoría (el mismo producto sí puede estar en varias categorías)
+        const clavesVistas = new Set();
         productosInventario = productosInventario.filter(p => {
-            const clave = String(p.sku).trim().toLowerCase();
-            if (skusVistos.has(clave)) return false;
-            skusVistos.add(clave);
+            const clave = String(p.sku).trim().toLowerCase() + "|" + normalizarTexto(p.categoria);
+            if (clavesVistas.has(clave)) return false;
+            clavesVistas.add(clave);
             return true;
         });
     } catch (error) {
