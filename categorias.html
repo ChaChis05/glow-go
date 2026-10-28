@@ -238,7 +238,7 @@
         const url = typeof input === "string" ? input : ((input && input.url) || "");
         if (/(^|\/)catalogo\.csv(\?|$)/i.test(url)) {
             const sep = url.includes("?") ? "&" : "?";
-            const resp = await fetchOriginal(url + sep + "v=" + Date.now(), Object.assign({}, init, { cache: "no-store" }));
+            const resp = await fetchOriginal(url + sep + "v=" + Math.floor(Date.now() / 600000), init);
             if (!resp.ok) return resp;
             const buf = await resp.arrayBuffer();
             let texto;
