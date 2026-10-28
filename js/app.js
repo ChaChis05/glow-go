@@ -297,7 +297,7 @@ function renderizarProductosGrilla(productosAcesar) {
 
         card.innerHTML = `
             <div>
-                <img src="${portadaImg}" alt="${prod.nombre}" onerror="this.src='logo_glow.jpg'" class="h-48 w-full object-contain rounded-xl mb-4 bg-gray-50 p-2 cursor-pointer" onclick="abrirModalProducto(${prod.id})">
+                <img loading="lazy" src="${portadaImg}" alt="${prod.nombre}" onerror="this.src='logo_glow.jpg'" class="h-48 w-full object-contain rounded-xl mb-4 bg-gray-50 p-2 cursor-pointer" onclick="abrirModalProducto(${prod.id})">
                 <span class="text-xs text-[#7A1C32] font-bold uppercase">${prod.categoria}</span>
                 <h3 class="font-bold text-gray-900 text-base mt-1 mb-2 cursor-pointer hover:text-[#7A1C32]" onclick="abrirModalProducto(${prod.id})">${prod.nombre}</h3>
             </div>
