@@ -451,7 +451,7 @@
             if (!contenedor) return;
 
             try {
-                const respuesta = await fetch(ARCHIVO_CSV + "?v=" + Date.now(), { cache: "no-store" });
+                const respuesta = await fetch(ARCHIVO_CSV + "?v=" + Math.floor(Date.now() / 600000))
                 if (!respuesta.ok) throw new Error("No se pudo leer el archivo CSV.");
 
                 const csvText = await respuesta.text();
