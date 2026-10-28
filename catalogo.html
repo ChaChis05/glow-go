@@ -321,7 +321,7 @@
                             return `
                                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
                                     <div>
-                                        <img src="${p.imagenes[0]}" alt="${p.nombre}" onerror="this.src='logo_glow.jpg'" class="h-48 w-full object-contain rounded-xl mb-4 bg-gray-50 p-2 cursor-pointer" onclick="abrirModalProducto(${p.id})">
+                                        <img loading="lazy" src="${p.imagenes[0]}" alt="${p.nombre}" onerror="this.src='logo_glow.jpg'" class="h-48 w-full object-contain rounded-xl mb-4 bg-gray-50 p-2 cursor-pointer" onclick="abrirModalProducto(${p.id})">
                                         <span class="text-xs text-[#7A1C32] font-bold uppercase">${p.categoria}</span>
                                         <h3 class="font-bold text-gray-900 text-base mt-1 mb-2 cursor-pointer hover:text-[#7A1C32]" onclick="abrirModalProducto(${p.id})">${p.nombre}</h3>
                                     </div>
