@@ -43,6 +43,7 @@
 const categoriasOficiales = [
     { nombre: "BARBERIA E INSUMOS" },
     { nombre: "BELLEZA" },
+    { nombre: "NAVIDAD" },
     { nombre: "CACHARRERÍA" },
     { nombre: "FUTBOL 1.1" },
     { nombre: "ACCESORIOS" },
