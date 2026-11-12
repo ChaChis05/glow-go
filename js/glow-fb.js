@@ -9,14 +9,14 @@ import {
     signOut, updateProfile, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 import {
-    getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, limit,
+    getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, orderBy, limit,
     onSnapshot, getDocs, writeBatch, runTransaction, serverTimestamp, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 export {
     onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
     updateProfile, sendPasswordResetEmail,
-    doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, limit, onSnapshot,
+    doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot,
     getDocs, writeBatch, runTransaction, serverTimestamp, arrayUnion, arrayRemove
 };
 

@@ -42,6 +42,15 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Sorteo trimestral: tickets agregados a mano y ganadores. SOLO la administradora.
+    match /sorteo/{id} {
+      allow read, write: if esAdmin();
+    }
+    match /sorteoGanadores/{id} {
+      allow read, create: if esAdmin();
+      allow update, delete: if false;   // el historial de ganadores no se puede alterar
+    }
+
     // Pedidos: el cliente crea y ve los suyos; la administradora ve y gestiona todos
     match /pedidos/{pedidoId} {
       allow read: if request.auth != null

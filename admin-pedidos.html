@@ -99,6 +99,7 @@
             <div class="flex gap-2 mb-6">
                 <button id="tab-pedidos" onclick="mostrarTab('pedidos')" class="tab-activa px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-box mr-1.5"></i> Pedidos</button>
                 <button id="tab-usuarios" onclick="mostrarTab('usuarios')" class="px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-users mr-1.5"></i> Usuarios</button>
+                <button id="tab-sorteo" onclick="mostrarTab('sorteo')" class="px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-ticket mr-1.5"></i> Sorteo</button>
             </div>
 
             <section id="seccion-pedidos">
@@ -131,6 +132,90 @@
                     <p id="usuarios-vacio" class="hidden text-center text-sm text-gray-400 py-8">Todavía no hay usuarios registrados.</p>
                 </div>
             </section>
+
+            <!-- SORTEO TRIMESTRAL (solo administradora) -->
+            <section id="seccion-sorteo" class="hidden space-y-6">
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-black text-gray-800"><i class="fa-solid fa-ticket text-[#D4AF37] mr-1.5"></i> Sorteo trimestral</h2>
+                        <p class="text-xs text-gray-500">Cada pedido = 1 ticket. Cuentan los pedidos de la web <strong>confirmados o enviados</strong> y los pedidos por WhatsApp que agregues a mano.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="sorteo-trimestre" class="text-xs font-bold text-gray-500 uppercase">Trimestre</label>
+                        <select id="sorteo-trimestre" class="text-sm font-bold px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 cursor-pointer focus:ring-2 focus:ring-[#7A1C32]"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Participantes</p><p id="sorteo-stat-numeros" class="text-2xl font-black text-[#7A1C32]">0</p></div>
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Tickets totales</p><p id="sorteo-stat-tickets" class="text-2xl font-black text-[#D4AF37]">0</p></div>
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Tickets web</p><p id="sorteo-stat-web" class="text-2xl font-black text-blue-700">0</p></div>
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Tickets WhatsApp</p><p id="sorteo-stat-manual" class="text-2xl font-black text-green-600">0</p></div>
+                </div>
+                <p id="sorteo-aviso-pendientes" class="hidden text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2"></p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Agregar pedidos de WhatsApp -->
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-3">
+                        <h3 class="font-black text-gray-800"><i class="fa-brands fa-whatsapp text-green-600 mr-1"></i> Agregar pedidos de WhatsApp</h3>
+                        <input id="sorteo-tel" type="tel" inputmode="numeric" placeholder="Número de WhatsApp (ej: 3001234567)" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        <input id="sorteo-nombre" type="text" placeholder="Nombre (opcional)" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        <div class="flex gap-2">
+                            <div class="w-28">
+                                <label for="sorteo-cant" class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Pedidos</label>
+                                <input id="sorteo-cant" type="number" min="1" max="50" value="1" class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            </div>
+                            <div class="flex-1">
+                                <label for="sorteo-nota" class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Nota (opcional)</label>
+                                <input id="sorteo-nota" type="text" placeholder="Ej: pedido acumulado 12/11" class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            </div>
+                        </div>
+                        <button id="sorteo-agregar" type="button" class="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-2.5 rounded-xl text-sm cursor-pointer shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Agregar tickets</button>
+                        <p class="text-[11px] text-gray-400">Se guardan en el trimestre seleccionado. Si el número ya participa, los tickets se suman.</p>
+
+                        <div class="border-t pt-3">
+                            <p class="text-xs font-bold text-gray-500 uppercase mb-2">Agregados a mano este trimestre</p>
+                            <div id="sorteo-manuales" class="space-y-1.5 max-h-72 overflow-y-auto"></div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de tickets -->
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 lg:col-span-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <input id="sorteo-filtro" type="text" placeholder="Buscar número o nombre..." class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            <div class="flex gap-2">
+                                <button id="sorteo-copiar" type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold px-4 py-2.5 rounded-xl text-xs cursor-pointer"><i class="fa-regular fa-copy mr-1"></i> Copiar</button>
+                                <button id="sorteo-csv" type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold px-4 py-2.5 rounded-xl text-xs cursor-pointer"><i class="fa-solid fa-file-csv mr-1"></i> Descargar</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead>
+                                    <tr class="text-gray-400 uppercase border-b">
+                                        <th class="py-2 pr-3">#</th>
+                                        <th class="py-2 pr-3">WhatsApp</th>
+                                        <th class="py-2 pr-3">Nombre</th>
+                                        <th class="py-2 pr-3 text-center">Web</th>
+                                        <th class="py-2 pr-3 text-center">WhatsApp</th>
+                                        <th class="py-2 text-center">Tickets</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sorteo-tabla"></tbody>
+                            </table>
+                        </div>
+                        <p id="sorteo-vacio" class="hidden text-center text-sm text-gray-400 py-8">Todavía no hay tickets en este trimestre.</p>
+                    </div>
+                </div>
+
+                <!-- Sortear -->
+                <div class="barra-estetica rounded-3xl p-6 text-center text-white shadow-md">
+                    <p class="text-xs uppercase tracking-widest text-amber-200 font-bold mb-2">Sorteo del trimestre</p>
+                    <p id="sorteo-ruleta" class="text-3xl md:text-4xl font-black tracking-wider min-h-[3rem]">— — —</p>
+                    <p id="sorteo-ganador-info" class="text-sm text-amber-100 mt-1 min-h-[1.25rem]"></p>
+                    <button id="sorteo-sortear" type="button" class="mt-4 bg-[#D4AF37] hover:bg-amber-400 text-[#521221] font-black px-8 py-3 rounded-2xl text-sm cursor-pointer shadow-lg"><i class="fa-solid fa-dice mr-1.5"></i> Sortear ganador</button>
+                    <div id="sorteo-historial" class="mt-4 text-xs text-amber-100 space-y-1"></div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -140,7 +225,7 @@
     <script type="module">
         import {
             db, usuarioListo, esAdminUsuario, esc, soloDigitos,
-            collection, query, orderBy, limit, onSnapshot, doc, getDoc, setDoc, updateDoc, serverTimestamp
+            collection, query, where, orderBy, limit, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp
         } from "./js/glow-fb.js";
 
         const $ = (id) => document.getElementById(id);
@@ -168,8 +253,10 @@
         window.mostrarTab = function (cual) {
             $("seccion-pedidos").classList.toggle("hidden", cual !== "pedidos");
             $("seccion-usuarios").classList.toggle("hidden", cual !== "usuarios");
+            $("seccion-sorteo").classList.toggle("hidden", cual !== "sorteo");
             $("tab-pedidos").classList.toggle("tab-activa", cual === "pedidos");
             $("tab-usuarios").classList.toggle("tab-activa", cual === "usuarios");
+            $("tab-sorteo").classList.toggle("tab-activa", cual === "sorteo");
         };
 
         /* ---------- Pedidos ---------- */
@@ -351,6 +438,259 @@
         }
         $("filtro-usuarios").addEventListener("input", renderizarUsuarios);
 
+        /* ---------- Sorteo trimestral ----------
+           Tickets = pedidos web confirmados/enviados del trimestre + pedidos de WhatsApp agregados a mano.
+           Colecciones (solo administradora, ver firestore.rules):
+             sorteo/{auto}           -> { telefono, nombre, pedidos, nota, trimestre, creadoEn }
+             sorteoGanadores/{auto}  -> { trimestre, telefono, nombre, tickets, totalTickets, creadoEn } */
+        let sorteoPedidosWeb = [];
+        let sorteoManuales = [];
+        let sorteoGanadores = [];
+        let sorteoFilas = [];
+        let sorteoDesuscribir = [];
+
+        function claveTrimestre(fecha) {
+            return fecha.getFullYear() + "-T" + (Math.floor(fecha.getMonth() / 3) + 1);
+        }
+        function rangoTrimestre(clave) {
+            const [anio, t] = clave.split("-T").map(Number);
+            return { inicio: new Date(anio, (t - 1) * 3, 1), fin: new Date(anio, t * 3, 1) };
+        }
+        function nombreTrimestre(clave) {
+            const [anio, t] = clave.split("-T");
+            const meses = ["Ene – Mar", "Abr – Jun", "Jul – Sep", "Oct – Dic"][Number(t) - 1];
+            return `T${t} ${anio} (${meses})`;
+        }
+        // Mismo número aunque lo escriban con +57, espacios o guiones
+        function normalizarTel(t) {
+            let d = soloDigitos(t);
+            if (d.length === 12 && d.startsWith("57")) d = d.slice(2);
+            return d;
+        }
+        // Fecha del pedido: "creadoEn" de Firebase, o el texto "fecha" (dd/mm/aaaa, ...) si faltara
+        function fechaPedido(p) {
+            try { if (p.creadoEn && p.creadoEn.toDate) return p.creadoEn.toDate(); } catch (e) { /* sigue */ }
+            const m = String(p.fecha || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            return m ? new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])) : null;
+        }
+        function cuentaParaSorteo(estado) {
+            const e = estado || "";
+            return e.includes("Confirmado") || e.includes("Enviado");
+        }
+
+        function llenarSelectorTrimestres() {
+            const sel = $("sorteo-trimestre");
+            const hoy = new Date();
+            const opciones = [];
+            for (let i = 0; i < 8; i++) {
+                const f = new Date(hoy.getFullYear(), hoy.getMonth() - i * 3, 1);
+                opciones.push(claveTrimestre(f));
+            }
+            sel.innerHTML = opciones.map((c, i) =>
+                `<option value="${c}">${nombreTrimestre(c)}${i === 0 ? " — actual" : ""}</option>`).join("");
+        }
+
+        function suscribirSorteo() {
+            sorteoDesuscribir.forEach(f => f());
+            sorteoDesuscribir = [];
+            sorteoPedidosWeb = []; sorteoManuales = []; sorteoGanadores = [];
+            $("sorteo-ruleta").textContent = "— — —";
+            $("sorteo-ganador-info").textContent = "";
+            renderizarSorteo();
+
+            const clave = $("sorteo-trimestre").value;
+            const { inicio, fin } = rangoTrimestre(clave);
+
+            // Se leen TODOS los pedidos (solo lectura) y se filtran por fecha aquí,
+            // para que no quede por fuera ningún pedido aunque le falte "creadoEn".
+            sorteoDesuscribir.push(onSnapshot(
+                collection(db, "pedidos"),
+                (snap) => {
+                    sorteoPedidosWeb = snap.docs.map(d => d.data()).filter(p => {
+                        const f = fechaPedido(p);
+                        return f && f >= inicio && f < fin;
+                    });
+                    renderizarSorteo();
+                },
+                (err) => { console.error(err); aviso("No se pudieron leer los pedidos del trimestre.", true); }
+            ));
+            sorteoDesuscribir.push(onSnapshot(
+                query(collection(db, "sorteo"), where("trimestre", "==", clave)),
+                (snap) => { sorteoManuales = snap.docs.map(d => ({ ...d.data(), _id: d.id })); renderizarSorteo(); },
+                (err) => { console.error(err); aviso("No se pudo leer el sorteo. ¿Publicaste las reglas nuevas de Firestore?", true); }
+            ));
+            sorteoDesuscribir.push(onSnapshot(
+                query(collection(db, "sorteoGanadores"), where("trimestre", "==", clave)),
+                (snap) => { sorteoGanadores = snap.docs.map(d => d.data()); renderizarHistorial(); },
+                (err) => console.error(err)
+            ));
+        }
+
+        function calcularFilas() {
+            const mapa = {};
+            const fila = (tel) => (mapa[tel] = mapa[tel] || { tel, nombre: "", web: 0, manual: 0 });
+            let pendientes = 0;
+            sorteoPedidosWeb.forEach(p => {
+                const tel = normalizarTel(p.telefonoCliente);
+                if (!tel) return;
+                if (!cuentaParaSorteo(p.estado)) { pendientes++; return; }
+                const f = fila(tel);
+                f.web++;
+                if (!f.nombre && p.nombreCliente) f.nombre = p.nombreCliente;
+            });
+            sorteoManuales.forEach(m => {
+                const tel = normalizarTel(m.telefono);
+                if (!tel) return;
+                const f = fila(tel);
+                f.manual += Number(m.pedidos) || 0;
+                if (!f.nombre && m.nombre) f.nombre = m.nombre;
+            });
+            const filas = Object.values(mapa)
+                .map(f => ({ ...f, tickets: f.web + f.manual }))
+                .filter(f => f.tickets > 0)
+                .sort((a, b) => b.tickets - a.tickets || a.tel.localeCompare(b.tel));
+            return { filas, pendientes };
+        }
+
+        function renderizarSorteo() {
+            const { filas, pendientes } = calcularFilas();
+            sorteoFilas = filas;
+            const sum = (k) => filas.reduce((s, f) => s + f[k], 0);
+            $("sorteo-stat-numeros").textContent = filas.length;
+            $("sorteo-stat-tickets").textContent = sum("tickets");
+            $("sorteo-stat-web").textContent = sum("web");
+            $("sorteo-stat-manual").textContent = sum("manual");
+
+            const avisoP = $("sorteo-aviso-pendientes");
+            avisoP.classList.toggle("hidden", !pendientes);
+            avisoP.textContent = `⏳ ${pendientes} pedido(s) web de este trimestre siguen "Pendiente a confirmación" y todavía no suman tickets.`;
+
+            const filtro = $("sorteo-filtro").value.trim().toLowerCase();
+            const visibles = filas.filter(f => !filtro || f.tel.includes(soloDigitos(filtro) || "∅") || (f.nombre || "").toLowerCase().includes(filtro));
+            $("sorteo-vacio").classList.toggle("hidden", filas.length > 0);
+            $("sorteo-tabla").innerHTML = visibles.map(f => `
+                <tr class="border-b border-gray-50">
+                    <td class="py-2.5 pr-3 text-gray-400 font-bold">${filas.indexOf(f) + 1}</td>
+                    <td class="py-2.5 pr-3"><a href="https://wa.me/57${esc(f.tel)}" target="_blank" rel="noopener" class="text-green-600 font-bold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${esc(f.tel)}</a></td>
+                    <td class="py-2.5 pr-3 font-bold text-gray-800">${esc(f.nombre || "—")}</td>
+                    <td class="py-2.5 pr-3 text-center">${f.web}</td>
+                    <td class="py-2.5 pr-3 text-center">${f.manual}</td>
+                    <td class="py-2.5 text-center"><span class="inline-block min-w-[2rem] px-2 py-0.5 rounded-full bg-[#7A1C32] text-white font-black">${f.tickets}</span></td>
+                </tr>`).join("");
+
+            const manuales = [...sorteoManuales].sort((a, b) => (b.creadoEn?.seconds || 0) - (a.creadoEn?.seconds || 0));
+            $("sorteo-manuales").innerHTML = manuales.length ? manuales.map(m => `
+                <div class="flex items-center justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2 text-xs">
+                    <div class="min-w-0">
+                        <p class="font-bold text-gray-800 truncate">${esc(m.telefono)} ${m.nombre ? "· " + esc(m.nombre) : ""}</p>
+                        <p class="text-gray-400 truncate">+${Number(m.pedidos) || 0} ticket(s) · ${esc(fechaTs(m.creadoEn))}${m.nota ? " · " + esc(m.nota) : ""}</p>
+                    </div>
+                    <button onclick="borrarManualSorteo('${esc(m._id)}')" title="Eliminar" class="text-red-500 hover:text-red-700 cursor-pointer flex-shrink-0"><i class="fa-solid fa-trash-can"></i></button>
+                </div>`).join("") : `<p class="text-xs text-gray-400">Aún no has agregado pedidos de WhatsApp.</p>`;
+        }
+
+        function renderizarHistorial() {
+            const g = [...sorteoGanadores].sort((a, b) => (b.creadoEn?.seconds || 0) - (a.creadoEn?.seconds || 0));
+            $("sorteo-historial").innerHTML = g.length
+                ? `<p class="font-bold uppercase tracking-wider text-amber-200">Sorteos realizados en este trimestre</p>` +
+                  g.map(x => `<p>🏆 ${esc(x.telefono)}${x.nombre ? " · " + esc(x.nombre) : ""} — ${x.tickets} de ${x.totalTickets} tickets · ${esc(fechaTs(x.creadoEn))}</p>`).join("")
+                : "";
+        }
+
+        $("sorteo-agregar").addEventListener("click", async () => {
+            const tel = normalizarTel($("sorteo-tel").value);
+            const cant = parseInt($("sorteo-cant").value, 10);
+            if (tel.length !== 10) { aviso("Escribe un número de WhatsApp de 10 dígitos.", true); return; }
+            if (!(cant >= 1 && cant <= 50)) { aviso("La cantidad de pedidos debe estar entre 1 y 50.", true); return; }
+            const btn = $("sorteo-agregar");
+            btn.disabled = true;
+            try {
+                await setDoc(doc(collection(db, "sorteo")), {
+                    telefono: tel,
+                    nombre: $("sorteo-nombre").value.trim().slice(0, 80),
+                    pedidos: cant,
+                    nota: $("sorteo-nota").value.trim().slice(0, 120),
+                    trimestre: $("sorteo-trimestre").value,
+                    creadoEn: serverTimestamp()
+                });
+                ["sorteo-tel", "sorteo-nombre", "sorteo-nota"].forEach(id => $(id).value = "");
+                $("sorteo-cant").value = 1;
+                aviso(`¡${cant} ticket(s) agregados a ${tel}!`);
+            } catch (e) { console.error(e); aviso("No se pudo guardar. ¿Publicaste las reglas nuevas de Firestore?", true); }
+            finally { btn.disabled = false; }
+        });
+
+        window.borrarManualSorteo = async function (id) {
+            if (!confirm("¿Eliminar estos tickets agregados a mano?")) return;
+            try { await deleteDoc(doc(db, "sorteo", id)); aviso("Tickets eliminados."); }
+            catch (e) { console.error(e); aviso("No se pudo eliminar.", true); }
+        };
+
+        $("sorteo-filtro").addEventListener("input", renderizarSorteo);
+        $("sorteo-trimestre").addEventListener("change", suscribirSorteo);
+
+        function textoLista() {
+            return sorteoFilas.map(f => `${f.tel}${f.nombre ? " (" + f.nombre + ")" : ""}: ${f.tickets} ticket(s)`).join("\n");
+        }
+        $("sorteo-copiar").addEventListener("click", async () => {
+            if (!sorteoFilas.length) { aviso("No hay tickets para copiar.", true); return; }
+            try { await navigator.clipboard.writeText(textoLista()); aviso("Lista copiada."); }
+            catch (e) { aviso("No se pudo copiar.", true); }
+        });
+        $("sorteo-csv").addEventListener("click", () => {
+            if (!sorteoFilas.length) { aviso("No hay tickets para descargar.", true); return; }
+            const celda = (v) => `"${String(v).replace(/"/g, '""')}"`;
+            const lineas = ["WhatsApp;Nombre;Tickets web;Tickets WhatsApp;Tickets totales"]
+                .concat(sorteoFilas.map(f => [f.tel, f.nombre, f.web, f.manual, f.tickets].map(celda).join(";")));
+            const blob = new Blob(["﻿" + lineas.join("\r\n")], { type: "text/csv;charset=utf-8" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `sorteo-${$("sorteo-trimestre").value}.csv`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        });
+
+        // Número aleatorio seguro y sin sesgo entre 0 y max-1
+        function aleatorio(max) {
+            const limite = Math.floor(0x100000000 / max) * max;
+            const buf = new Uint32Array(1);
+            do { crypto.getRandomValues(buf); } while (buf[0] >= limite);
+            return buf[0] % max;
+        }
+
+        $("sorteo-sortear").addEventListener("click", () => {
+            const filas = sorteoFilas;
+            const total = filas.reduce((s, f) => s + f.tickets, 0);
+            if (!total) { aviso("No hay tickets para sortear en este trimestre.", true); return; }
+            if (!confirm(`¿Sortear entre ${filas.length} participante(s) y ${total} ticket(s)?`)) return;
+
+            // Cada número tiene tantas oportunidades como tickets
+            let r = aleatorio(total), ganador = filas[0];
+            for (const f of filas) { if (r < f.tickets) { ganador = f; break; } r -= f.tickets; }
+
+            const btn = $("sorteo-sortear");
+            btn.disabled = true;
+            $("sorteo-ganador-info").textContent = "";
+            const ruleta = $("sorteo-ruleta");
+            let vueltas = 0;
+            const t = setInterval(() => {
+                ruleta.textContent = filas[aleatorio(filas.length)].tel;
+                if (++vueltas >= 30) {
+                    clearInterval(t);
+                    ruleta.textContent = "🏆 " + ganador.tel;
+                    $("sorteo-ganador-info").textContent =
+                        `${ganador.nombre ? ganador.nombre + " · " : ""}${ganador.tickets} de ${total} tickets (${(ganador.tickets / total * 100).toFixed(1)}% de probabilidad)`;
+                    btn.disabled = false;
+                    setDoc(doc(collection(db, "sorteoGanadores")), {
+                        trimestre: $("sorteo-trimestre").value,
+                        telefono: ganador.tel, nombre: ganador.nombre || "",
+                        tickets: ganador.tickets, totalTickets: total, participantes: filas.length,
+                        creadoEn: serverTimestamp()
+                    }).catch(e => { console.error(e); aviso("El ganador salió, pero no se pudo guardar en el historial.", true); });
+                }
+            }, 80);
+        });
+
         /* ---------- Acceso ---------- */
         function mostrarAcceso(titulo, texto, conBoton) {
             $("admin-acceso-titulo").textContent = titulo;
@@ -386,6 +726,9 @@
                 },
                 (err) => { console.error(err); aviso("No se pudieron leer los usuarios.", true); }
             );
+
+            llenarSelectorTrimestres();
+            suscribirSorteo();
         }
     </script>
 </body>
