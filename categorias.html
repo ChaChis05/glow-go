@@ -729,7 +729,7 @@
             return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
         }
 
-        function cargarImagenComoDatosPDF(ruta, segundoIntento) {
+        function cargarImagenComoDatosPDF(ruta, segundoIntento, gris) {
             return new Promise(resolve => {
                 const imagen = new Image();
                 imagen.onload = function () {
@@ -741,6 +741,17 @@
                         contexto.fillStyle = "#ffffff";
                         contexto.fillRect(0, 0, canvas.width, canvas.height);
                         contexto.drawImage(imagen, 0, 0);
+                        if (gris) {
+                            // Producto agotado: pasar la foto a blanco y negro, un poco más clara
+                            const px = contexto.getImageData(0, 0, canvas.width, canvas.height);
+                            const d = px.data;
+                            for (let i = 0; i < d.length; i += 4) {
+                                const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                                const claro = g + (255 - g) * 0.35;
+                                d[i] = d[i + 1] = d[i + 2] = claro;
+                            }
+                            contexto.putImageData(px, 0, 0);
+                        }
                         resolve({ datos: canvas.toDataURL("image/jpeg", 0.88), ancho: canvas.width, alto: canvas.height });
                     } catch (error) {
                         resolve(null);
@@ -749,7 +760,7 @@
                 imagen.onerror = () => {
     const alterna = String(ruta).replace(/IMAGENES(?:%20|\s)PRODUCTOS\//i, "IMAGENES PRODUCTOS 2/");
     if (!segundoIntento && alterna !== ruta) {
-        cargarImagenComoDatosPDF(alterna, true).then(resolve);
+        cargarImagenComoDatosPDF(alterna, true, gris).then(resolve);
     } else {
         resolve(null);
     }
@@ -779,6 +790,34 @@
             const w = imagen.ancho * proporcion;
             const h = imagen.alto * proporcion;
             doc.addImage(imagen.datos, "JPEG", x + (ancho - w) / 2, y + (alto - h) / 2, w, h, undefined, "FAST");
+        }
+
+        // Sello rojo inclinado "AGOTADO" centrado en (cx, cy)
+        function dibujarSelloAgotado(doc, cx, cy) {
+            const angulo = 22, rad = angulo * Math.PI / 180;
+            const cos = Math.cos(rad), sin = Math.sin(rad);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(19);
+            const texto = "AGOTADO";
+            const anchoTexto = doc.getTextWidth(texto);
+            const altoTexto = 19 * 0.3528 * 0.72;
+            const u = [cos, -sin], v = [-sin, -cos];          // dirección del texto y "hacia arriba"
+            const a = anchoTexto / 2 + 3.2, b = altoTexto / 2 + 2.6;
+            const esq = [[a, b], [-a, b], [-a, -b], [a, -b]].map(([m, n]) => [cx + m * u[0] + n * v[0], cy + m * u[1] + n * v[1]]);
+
+            doc.setFillColor(255, 255, 255);
+            doc.triangle(esq[0][0], esq[0][1], esq[1][0], esq[1][1], esq[2][0], esq[2][1], "F");
+            doc.triangle(esq[0][0], esq[0][1], esq[2][0], esq[2][1], esq[3][0], esq[3][1], "F");
+            doc.setDrawColor(220, 38, 38);
+            doc.setLineWidth(1.1);
+            for (let i = 0; i < 4; i++) {
+                const p1 = esq[i], p2 = esq[(i + 1) % 4];
+                doc.line(p1[0], p1[1], p2[0], p2[1]);
+            }
+            const x0 = cx - (anchoTexto / 2) * u[0] - (altoTexto / 2) * v[0];
+            const y0 = cy - (anchoTexto / 2) * u[1] - (altoTexto / 2) * v[1];
+            doc.setTextColor(220, 38, 38);
+            doc.text(texto, x0, y0, { angle: angulo });
         }
 
         function estadoPDF(mensaje) {
@@ -910,11 +949,12 @@
                         doc.setLineWidth(0.3);
                         doc.roundedRect(x, y, anchoTarjeta, altoTarjeta, 2, 2, "S");
 
+                        const agotado = typeof window.productoAgotado === "function" && window.productoAgotado(producto);
                         let imagenProducto = null;
                         const rutasImagen = Array.isArray(producto.imagenes) ? producto.imagenes : [];
                         for (const ruta of rutasImagen) {
                             if (!ruta) continue;
-                            imagenProducto = await cargarImagenComoDatosPDF(ruta);
+                            imagenProducto = await cargarImagenComoDatosPDF(ruta, false, agotado);
                             if (imagenProducto) break;
                         }
 
@@ -924,8 +964,9 @@
                             doc.setFillColor(248, 246, 246);
                             doc.rect(x + 3, y + 3, anchoTarjeta - 6, altoImagen, "F");
                         }
+                        if (agotado) dibujarSelloAgotado(doc, x + anchoTarjeta / 2, y + 3 + altoImagen / 2);
 
-                        doc.setTextColor(45, 35, 38);
+                        if (agotado) doc.setTextColor(150, 150, 150); else doc.setTextColor(45, 35, 38);
                         doc.setFont("helvetica", "bold");
                         doc.setFontSize(7.5);
                         const nombreProducto = String(producto.nombre || "Sin nombre");
@@ -934,7 +975,7 @@
                         doc.text(lineasNombre, x + 3, yNombre);
 
                         const yPrecio = yNombre + lineasNombre.length * 3.3 + 3;
-                        doc.setTextColor(...PDF_CEREZA);
+                        if (agotado) doc.setTextColor(150, 150, 150); else doc.setTextColor(...PDF_CEREZA);
                         doc.setFont("helvetica", "bold");
                         doc.setFontSize(9);
                         doc.text(String(producto.precioStr || producto.precio || "Precio no disponible"), x + 3, yPrecio);
