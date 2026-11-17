@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="./favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premios del sorteo - Glow & Go</title>
+    <meta name="description" content="Conoce los premios del sorteo trimestral de Glow & Go. Cada pedido es 1 ticket y el ganador escoge su premio.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        @keyframes destello { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .texto-dorado {
+            background: linear-gradient(90deg, #D4AF37 0%, #fff3c4 25%, #D4AF37 50%, #fff3c4 75%, #D4AF37 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            animation: destello 4s linear infinite;
+        }
+        @keyframes brillo { 0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,.65); } 50% { box-shadow: 0 0 0 7px rgba(212,175,55,0); } }
+        .etiqueta-sorpresa { animation: brillo 2.2s ease-in-out infinite; }
+        @keyframes flotar { 0%,100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-12px) rotate(4deg); } }
+        .flotar { animation: flotar 4s ease-in-out infinite; }
+
+        .revelar { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+        .revelar.visible { opacity: 1; transform: none; }
+
+        .chips::-webkit-scrollbar { display: none; }
+        .zoom-container { position: relative; overflow: hidden; cursor: zoom-in; }
+        .zoom-container img { transition: transform .3s ease; }
+        #modal-premio { z-index: 10000; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .texto-dorado, .etiqueta-sorpresa, .flotar { animation: none !important; }
+            .revelar { opacity: 1; transform: none; }
+        }
+    </style>
+    <script src="js/precios.js"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- ========================================== -->
+    <!-- 📌 ENCABEZADO -->
+    <!-- ========================================== -->
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-[9999] shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:h-24 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 overflow-visible">
+            <div class="flex items-center flex-shrink-0">
+                <a href="index.html" class="flex items-center">
+                    <img src="logo_glow.jpg" alt="Glow & Go" class="h-14 sm:h-16 lg:h-20 w-auto object-contain">
+                </a>
+            </div>
+
+            <nav class="flex items-center space-x-4 sm:space-x-6 overflow-visible py-1 lg:py-0">
+                <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Inicio</a>
+                <a href="catalogo.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] transition-colors whitespace-nowrap">Catálogo</a>
+                <div class="relative">
+                    <button onclick="toggleMenuCategoriasHeader()" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-[#7A1C32] flex items-center py-1 cursor-pointer focus:outline-none whitespace-nowrap">
+                        Categorías <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                    </button>
+                    <div id="dropdown-categorias-header" class="hidden absolute right-0 sm:left-0 mt-2 w-64 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto z-[99999] p-2 divide-y divide-gray-50"></div>
+                </div>
+                <a href="premios-sorteo.html" class="text-xs sm:text-sm font-bold text-[#7A1C32] transition-colors whitespace-nowrap">🎟️ Premios</a>
+            </nav>
+
+            <div class="flex items-center space-x-2 sm:space-x-4 w-full lg:w-auto justify-end">
+                <div id="contenedor-usuario-header" class="relative flex-shrink-0"></div>
+                <a href="carrito.html" class="flex items-center bg-[#7A1C32] hover:bg-[#621628] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
+                    <i class="fa-solid fa-cart-shopping mr-1.5 sm:mr-2"></i>
+                    <span>Carrito</span>
+                    <span id="cart-count" class="ml-1.5 sm:ml-2 bg-white text-[#7A1C32] text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- 🎟️ PORTADA -->
+    <!-- ========================================== -->
+    <section class="max-w-7xl mx-auto px-4 pt-6 lg:pt-10">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#521221] via-[#7A1C32] to-[#9b2a45] text-white shadow-2xl p-6 sm:p-10">
+            <div class="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#D4AF37]/20 blur-2xl"></div>
+            <div class="absolute -bottom-20 -left-10 w-64 h-64 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="flotar hidden md:block absolute top-8 right-10 text-7xl lg:text-8xl drop-shadow-xl" aria-hidden="true">🎁</div>
+
+            <div class="relative max-w-3xl space-y-3 text-center md:text-left">
+                <span class="inline-block bg-white/15 border border-white/20 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                    Sorteo trimestral · <span id="premios-trimestre">Oct – Dic</span>
+                </span>
+                <h1 class="text-2xl sm:text-4xl font-black leading-tight">Los <span class="texto-dorado">premios</span> del sorteo</h1>
+                <p class="text-sm sm:text-base text-white/90">
+                    Si ganas, <strong>tú escoges tu premio</strong> entre todas estas opciones. Hay combos completos y productos para elegir uno.
+                    Participan los pedidos del <strong id="premios-rango" class="text-[#D4AF37]">1 de octubre al 31 de diciembre</strong>: cada pedido es <strong>1 ticket</strong>.
+                </p>
+                <div class="flex flex-wrap justify-center md:justify-start gap-2 pt-1">
+                    <span class="bg-white/10 border border-white/15 rounded-full px-3 py-1.5 text-xs font-bold"><i class="fa-solid fa-gift mr-1 text-[#D4AF37]"></i> <span id="premios-cuantos">17</span> premios</span>
+                    <span class="bg-white/10 border border-white/15 rounded-full px-3 py-1.5 text-xs font-bold"><i class="fa-solid fa-boxes-stacked mr-1 text-[#D4AF37]"></i> <span id="premios-productos">63</span> productos</span>
+                    <span class="bg-white/10 border border-white/15 rounded-full px-3 py-1.5 text-xs font-bold">⏳ <span id="premios-dias">—</span></span>
+                </div>
+                <p class="text-[11px] sm:text-xs text-white/70 pt-1">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Estos productos son solo para el ganador del sorteo. Si quieres comprar alguno, búscalo en el
+                    <a href="catalogo.html" class="underline font-bold text-white">catálogo</a>.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 🧭 FILTRO POR CATEGORÍA -->
+    <!-- ========================================== -->
+    <div id="barra-chips" class="sticky top-24 z-[50] bg-gray-50/95 backdrop-blur border-b border-gray-100 mt-6">
+        <div id="premios-chips" class="chips max-w-7xl mx-auto px-4 py-3 flex gap-2 overflow-x-auto" style="scrollbar-width:none"></div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 🎁 PREMIOS -->
+    <!-- ========================================== -->
+    <main id="premios-contenedor" class="max-w-7xl mx-auto px-4 py-6 lg:py-10 space-y-12">
+        <div class="text-center text-gray-400 py-16 text-sm font-semibold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando premios...</div>
+    </main>
+
+    <!-- CTA FINAL -->
+    <section class="max-w-7xl mx-auto px-4 pb-6">
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+            <div>
+                <h2 class="text-lg sm:text-2xl font-black text-gray-900">¿Ya tienes tu ticket? 🎟️</h2>
+                <p class="text-xs sm:text-sm text-gray-500">Haz tu pedido por la página o por WhatsApp y entra al sorteo. ¡Más pedidos, más oportunidades!</p>
+            </div>
+            <div class="flex flex-wrap justify-center gap-2">
+                <a href="catalogo.html" class="bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold text-sm px-5 py-3 rounded-xl shadow-md"><i class="fa-solid fa-ticket mr-1.5"></i> Quiero mi ticket</a>
+                <a href="index.html#sorteo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-sm px-5 py-3 rounded-xl"><i class="fa-solid fa-circle-question mr-1.5"></i> ¿Cómo funciona?</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 🔍 MODAL DE DETALLE (sin compra) -->
+    <!-- ========================================== -->
+    <div id="modal-premio" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4" onclick="if(event.target===this) cerrarModalPremio()">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 lg:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="cerrarModalPremio()" aria-label="Cerrar" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer z-10">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modal-premio-contenido" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="bg-white border-t border-gray-100 py-10 lg:py-12 mt-12 lg:mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+            <img src="logo_glow.jpg" alt="Glow & Go" class="h-14 lg:h-16 w-auto mx-auto object-contain">
+            <p class="text-xs sm:text-sm text-gray-500 font-medium">Glow & Go — Tu mundo, en un solo lugar.</p>
+            <div class="text-xs text-gray-600 font-semibold space-y-1">
+                <p>📍 Fundado en El Socorro, Santander</p>
+                <p>👩‍💼 Fundadora: Zaidy Cano</p>
+                <p>📞 Contacto personal: <a href="https://wa.me/573107027780" class="text-[#7A1C32] font-bold hover:underline">3107027780</a></p>
+            </div>
+            <p class="text-[11px] text-gray-400 pt-2">&copy; 2026 Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- WHATSAPP FLOTANTE -->
+    <a href="https://wa.me/573134237663?text=Hola,%20vi%20los%20premios%20del%20sorteo%20de%20Glow%20%26%20Go" target="_blank"
+       class="fixed bottom-6 right-6 bg-green-500 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <script src="js/premios-sorteo.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/extras.js"></script>
+    <script type="module" src="js/firebase-glow.js"></script>
+
+    <script>
+    (function () {
+        "use strict";
+
+        const CORREO_ADMIN = "zaidycanobenavides@gmail.com";
+        const USUARIO_ADMIN_CORTO = "zaidycanobenavides";
+        const $ = (id) => document.getElementById(id);
+        const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        const pesos = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
+        const norm = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+        /* ---------- Fechas del trimestre (igual que en el inicio) ---------- */
+        const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+        const MESES_C = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        const hoy = new Date();
+        const t = Math.floor(hoy.getMonth() / 3);
+        const inicio = new Date(hoy.getFullYear(), t * 3, 1);
+        const cierre = new Date(hoy.getFullYear(), t * 3 + 3, 1);
+        const ultimo = new Date(cierre - 1);
+        $("premios-trimestre").textContent = MESES_C[inicio.getMonth()] + " – " + MESES_C[ultimo.getMonth()] + " " + ultimo.getFullYear();
+        $("premios-rango").textContent = "1 de " + MESES[inicio.getMonth()] + " al " + ultimo.getDate() + " de " + MESES[ultimo.getMonth()];
+        const dias = Math.ceil((cierre - hoy) / 86400000);
+        $("premios-dias").textContent = dias <= 1 ? "¡Último día!" : "Quedan " + dias + " días";
+
+        /* ---------- Usuario y carrito del encabezado ---------- */
+        window.toggleMenuUsuario = function () { const d = $("dropdown-usuario"); if (d) d.classList.toggle("hidden"); };
+        window.cerrarSesionUsuario = function () { localStorage.removeItem("usuarioLogueado"); localStorage.removeItem("tokenUsuario"); location.reload(); };
+        function pintarUsuario() {
+            const original = localStorage.getItem("usuarioLogueado") || "";
+            const limpio = original.toLowerCase().trim();
+            const cont = $("contenedor-usuario-header");
+            if (!cont) return;
+            if (!limpio) {
+                cont.innerHTML = `<a href="login.html" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center shadow-sm whitespace-nowrap"><i class="fa-solid fa-user mr-1.5 sm:mr-2"></i> <span>Ingresar</span></a>`;
+                return;
+            }
+            const esAdmin = (limpio === CORREO_ADMIN || limpio === USUARIO_ADMIN_CORTO);
+            cont.innerHTML = `
+                <button id="btn-usuario-activo" onclick="toggleMenuUsuario()" class="bg-[#7A1C32]/10 hover:bg-[#7A1C32]/20 text-[#7A1C32] px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center cursor-pointer shadow-sm whitespace-nowrap">
+                    <i class="fa-solid fa-user mr-1.5 sm:mr-2"></i><span class="max-w-[70px] sm:max-w-[120px] truncate">${esc(original)}</span><i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                </button>
+                <div id="dropdown-usuario" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-2 divide-y divide-gray-50">
+                    <div class="px-4 py-3 text-xs text-gray-500">Sesión iniciada como<br><strong class="text-gray-800 truncate block">${esc(original)}</strong></div>
+                    <div class="py-1">${esAdmin
+                        ? `<a href="admin-pedidos.html" class="w-full px-4 py-2 text-sm font-bold text-[#7A1C32] hover:bg-[#7A1C32]/10 rounded-xl flex items-center"><i class="fa-solid fa-gears mr-2"></i> Panel Administrador</a>`
+                        : `<a href="mis-pedidos.html" class="w-full px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl flex items-center"><i class="fa-solid fa-box-archive mr-2 text-[#7A1C32]"></i> Mis pedidos</a>`}</div>
+                    <div class="pt-1"><button onclick="cerrarSesionUsuario()" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center cursor-pointer"><i class="fa-solid fa-right-from-bracket mr-2"></i> Cerrar sesión</button></div>
+                </div>`;
+        }
+        function contarCarrito() {
+            let c = [];
+            try { c = JSON.parse(localStorage.getItem("carrito")) || []; } catch (e) { c = []; }
+            const n = c.reduce((s, i) => s + (Number(i.cantidad) || 0), 0);
+            if ($("cart-count")) $("cart-count").textContent = n;
+        }
+        window.addEventListener("click", (e) => {
+            const d = $("dropdown-usuario"), b = $("btn-usuario-activo");
+            if (d && b && !b.contains(e.target) && !d.contains(e.target)) d.classList.add("hidden");
+        });
+
+        /* ---------- Buscar cada premio en el catálogo ---------- */
+        function buscarProducto(item) {
+            const lista = (typeof productosInventario !== "undefined" && Array.isArray(productosInventario)) ? productosInventario : [];
+            const sku = String(item.sku || "").trim().toUpperCase();
+            const nombre = norm(item.nombre);
+            return lista.find(p => String(p.sku).trim().toUpperCase() === sku && norm(p.nombre) === nombre)
+                || lista.find(p => norm(p.nombre) === nombre)
+                || null;
+        }
+
+        const ETIQUETA_SORPRESA = `<span class="etiqueta-sorpresa inline-flex items-center gap-1 bg-[#D4AF37] text-[#521221] font-black text-[10px] sm:text-xs px-2.5 py-1 rounded-full whitespace-nowrap">🎁 + Regalo sorpresa</span>`;
+        const registro = [];   // productos para el modal
+
+        function tarjetaProducto(prod, item, tipo) {
+            const idx = registro.push(prod) - 1;
+            const img = (prod.imagenes && prod.imagenes[0]) || "logo_glow.jpg";
+            const sorpresa = tipo === "uno" && item.sorpresa;
+            return `
+                <button type="button" onclick="abrirModalPremio(${idx}, ${sorpresa ? "true" : "false"})"
+                        class="group relative text-left bg-white rounded-2xl p-3 border ${sorpresa ? "border-[#D4AF37]/60" : "border-gray-100"} shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer flex flex-col">
+                    ${sorpresa ? `<div class="absolute -top-2 left-2 z-10">${ETIQUETA_SORPRESA}</div>` : ""}
+                    <div class="w-full aspect-square bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden p-2 mb-2">
+                        <img src="${esc(img)}" alt="${esc(prod.nombre)}" loading="lazy" class="w-full h-full object-contain group-hover:scale-105 transition-transform">
+                    </div>
+                    <h4 class="text-[11px] sm:text-xs font-bold text-gray-800 line-clamp-2 group-hover:text-[#7A1C32] min-h-[2.2em]">${esc(prod.nombre)}</h4>
+                    <div class="mt-auto pt-2 flex items-center justify-between gap-1">
+                        <span class="font-black text-[#7A1C32] text-xs sm:text-sm">${pesos(prod.precioNum)}</span>
+                        <span class="text-[10px] font-bold text-gray-400 group-hover:text-[#7A1C32]"><i class="fa-solid fa-magnifying-glass-plus"></i> Ver</span>
+                    </div>
+                </button>`;
+        }
+
+        function tarjetaPremio(premio) {
+            const prods = premio.productos.map(it => ({ it, p: buscarProducto(it) })).filter(x => x.p);
+            if (!prods.length) return "";
+            const esCombo = premio.tipo === "combo";
+            const n = prods.length;
+            const total = prods.reduce((s, x) => s + (Number(x.p.precioNum) || 0), 0);
+            const precios = prods.map(x => Number(x.p.precioNum) || 0);
+            const max = Math.max(...precios), min = Math.min(...precios);
+            const conSorpresa = prods.filter(x => x.it.sorpresa).length;
+
+            let insignia, resumen;
+            if (esCombo && n === 1) {
+                insignia = `<span class="bg-[#7A1C32]/10 text-[#7A1C32] text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-star mr-1"></i> Premio individual</span>`;
+                resumen = `<p class="text-[11px] text-gray-500 font-bold uppercase">Valor del premio</p><p class="text-xl sm:text-2xl font-black text-[#7A1C32]">${pesos(total)}</p>`;
+            } else if (esCombo) {
+                insignia = `<span class="bg-[#7A1C32]/10 text-[#7A1C32] text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-box-open mr-1"></i> Combo · te llevas ${n === 2 ? "los dos" : n === 3 ? "los tres" : "todo"}</span>`;
+                resumen = `<p class="text-[11px] text-gray-500 font-bold uppercase">Valor total del combo</p><p class="text-xl sm:text-2xl font-black text-[#7A1C32]">${pesos(total)}</p>`;
+            } else {
+                insignia = `<span class="bg-blue-50 text-blue-700 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-hand-pointer mr-1"></i> Escoge 1 de ${n}</span>`;
+                resumen = `<p class="text-[11px] text-gray-500 font-bold uppercase">Premios de hasta</p><p class="text-xl sm:text-2xl font-black text-[#7A1C32]">${pesos(max)}</p>${min !== max ? `<p class="text-[10px] text-gray-400 font-bold">desde ${pesos(min)}</p>` : ""}`;
+            }
+
+            const columnas = n === 1 ? "grid-cols-2 sm:grid-cols-3" : n <= 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
+            const ancho = (!esCombo && n > 3) ? "lg:col-span-2" : "";
+
+            return `
+                <article class="revelar ${ancho} bg-white rounded-3xl border ${premio.sorpresa ? "border-[#D4AF37] ring-2 ring-[#D4AF37]/30" : "border-gray-100"} shadow-sm p-4 sm:p-6 flex flex-col gap-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="space-y-1.5">
+                            <div class="flex flex-wrap items-center gap-1.5">${insignia}${premio.sorpresa ? ETIQUETA_SORPRESA : ""}</div>
+                            <h3 class="text-base sm:text-xl font-black text-gray-900">${esc(premio.titulo)}</h3>
+                            ${!esCombo && conSorpresa ? `<p class="text-[11px] sm:text-xs text-gray-500">Las opciones marcadas con 🎁 vienen con un regalo sorpresa adicional.</p>` : ""}
+                            ${premio.sorpresa ? `<p class="text-[11px] sm:text-xs text-gray-500">Este combo incluye además un regalo sorpresa 🎁</p>` : ""}
+                        </div>
+                        <div class="text-right">${resumen}</div>
+                    </div>
+                    <div class="grid ${columnas} gap-3 pt-1">
+                        ${prods.map(x => tarjetaProducto(x.p, x.it, premio.tipo)).join("")}
+                    </div>
+                </article>`;
+        }
+
+        function pintarPremios() {
+            const secciones = window.GLOW_PREMIOS_SECCIONES || [];
+            const premios = window.GLOW_PREMIOS || [];
+            registro.length = 0;
+
+            const html = secciones.map(sec => {
+                const lista = premios.filter(p => p.seccion === sec.id).map(tarjetaPremio).filter(Boolean);
+                if (!lista.length) return "";
+                return `
+                    <section id="sec-${sec.id}" class="scroll-mt-48 space-y-4">
+                        <h2 class="text-lg sm:text-2xl font-black text-gray-900 flex items-center gap-2">
+                            <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#7A1C32] text-white flex items-center justify-center text-sm sm:text-base"><i class="fa-solid ${sec.icono}"></i></span>
+                            ${esc(sec.nombre)}
+                        </h2>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">${lista.join("")}</div>
+                    </section>`;
+            }).join("");
+
+            $("premios-contenedor").innerHTML = html || `<div class="text-center text-gray-400 py-16 text-sm font-semibold">Pronto publicaremos los premios.</div>`;
+
+            const visibles = secciones.filter(s => document.getElementById("sec-" + s.id));
+            $("premios-chips").innerHTML =
+                `<button type="button" data-sec="todo" class="chip flex-shrink-0 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#7A1C32] text-white shadow-sm">Todos</button>` +
+                visibles.map(s => `<button type="button" data-sec="${s.id}" class="chip flex-shrink-0 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-white text-gray-700 border border-gray-200 hover:border-[#7A1C32] hover:text-[#7A1C32]"><i class="fa-solid ${s.icono} mr-1.5"></i>${esc(s.nombre)}</button>`).join("");
+
+            $("premios-cuantos").textContent = premios.length;
+            $("premios-productos").textContent = registro.length;
+            activarRevelar();
+        }
+
+        // Filtro por categoría
+        document.addEventListener("click", (e) => {
+            const chip = e.target.closest("#premios-chips .chip");
+            if (!chip) return;
+            const sec = chip.dataset.sec;
+            document.querySelectorAll("#premios-chips .chip").forEach(c => {
+                const activo = c === chip;
+                c.className = "chip flex-shrink-0 px-4 py-2 rounded-full text-xs sm:text-sm font-bold " +
+                    (activo ? "bg-[#7A1C32] text-white shadow-sm" : "bg-white text-gray-700 border border-gray-200 hover:border-[#7A1C32] hover:text-[#7A1C32]");
+            });
+            document.querySelectorAll("#premios-contenedor > section").forEach(s => {
+                s.classList.toggle("hidden", sec !== "todo" && s.id !== "sec-" + sec);
+                s.querySelectorAll(".revelar").forEach(a => a.classList.add("visible"));
+            });
+            window.scrollTo({ top: $("premios-contenedor").offsetTop - 200, behavior: "smooth" });
+        });
+
+        /* ---------- Modal (solo ver, sin añadir al carrito) ---------- */
+        window.abrirModalPremio = function (idx, sorpresa) {
+            const p = registro[idx];
+            if (!p) return;
+            const imgs = (p.imagenes && p.imagenes.length) ? p.imagenes : ["logo_glow.jpg"];
+            let actual = 0;
+            function pintar() {
+                $("modal-premio-contenido").innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <div id="zoom-premio" class="zoom-container w-full bg-gray-50 rounded-2xl flex items-center justify-center p-4 h-60 sm:h-80 mb-3">
+                            <img id="img-premio" src="${esc(imgs[actual])}" class="w-full h-full object-contain pointer-events-none">
+                        </div>
+                        <p class="text-[11px] text-gray-400 italic mb-3"><i class="fa-solid fa-magnifying-glass mr-1"></i> Toca o pasa el cursor para hacer zoom</p>
+                        ${imgs.length > 1 ? `<div class="flex items-center gap-2 overflow-x-auto w-full py-1">${imgs.map((im, i) => `
+                            <button type="button" data-mini="${i}" class="mini w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 overflow-hidden bg-white p-1 flex-shrink-0 ${i === actual ? "border-[#7A1C32]" : "border-gray-200 opacity-70"}">
+                                <img src="${esc(im)}" class="w-full h-full object-contain">
+                            </button>`).join("")}</div>` : ""}
+                    </div>
+                    <div class="flex flex-col justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase">${esc(p.categoria)}</span>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 mt-1">${esc(p.nombre)}</h2>
+                            <p class="text-base sm:text-lg font-black text-[#7A1C32] mt-2">${pesos(p.precioNum)}</p>
+                            ${sorpresa ? `<div class="mt-2">${ETIQUETA_SORPRESA}</div>` : ""}
+                            <p class="text-xs sm:text-sm text-gray-600 mt-4 leading-relaxed">${esc(p.descripcion)}</p>
+                        </div>
+                        <div class="bg-[#7A1C32]/5 border border-[#7A1C32]/15 rounded-2xl p-4 text-xs sm:text-sm text-gray-700">
+                            <p class="font-black text-[#7A1C32] mb-1"><i class="fa-solid fa-ticket mr-1"></i> Premio del sorteo</p>
+                            Este producto es parte de los premios: solo lo recibe el ganador.
+                            ¿Lo quieres ya? Búscalo en el <a href="catalogo.html" class="font-bold text-[#7A1C32] underline">catálogo</a> o escríbenos por WhatsApp.
+                        </div>
+                    </div>`;
+                const box = $("zoom-premio"), im = $("img-premio");
+                box.addEventListener("mousemove", (e) => {
+                    const r = box.getBoundingClientRect();
+                    im.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
+                    im.style.transform = "scale(2.2)";
+                });
+                box.addEventListener("mouseleave", () => { im.style.transform = "scale(1)"; im.style.transformOrigin = "center"; });
+                box.addEventListener("click", () => {
+                    const z = im.style.transform === "scale(2.2)";
+                    im.style.transform = z ? "scale(1)" : "scale(2.2)";
+                });
+                document.querySelectorAll("#modal-premio-contenido .mini").forEach(b => b.addEventListener("click", () => { actual = Number(b.dataset.mini); pintar(); }));
+            }
+            pintar();
+            $("modal-premio").classList.remove("hidden");
+        };
+        window.cerrarModalPremio = function () { $("modal-premio").classList.add("hidden"); };
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarModalPremio(); });
+
+        /* ---------- Aparición al bajar ---------- */
+        let obs = null;
+        function activarRevelar() {
+            const els = document.querySelectorAll(".revelar:not(.visible)");
+            if (!("IntersectionObserver" in window)) { els.forEach(e => e.classList.add("visible")); return; }
+            if (!obs) obs = new IntersectionObserver((ent) => ent.forEach(e => {
+                if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); }
+            }), { threshold: 0.08 });
+            els.forEach(e => obs.observe(e));
+        }
+
+        /* ---------- Inicio ---------- */
+        function ajustarBarra() {
+            const h = document.querySelector("header");
+            if (h) $("barra-chips").style.top = h.offsetHeight + "px";
+        }
+        window.addEventListener("resize", ajustarBarra);
+
+        document.addEventListener("DOMContentLoaded", () => {
+            ajustarBarra();
+            pintarUsuario();
+            contarCarrito();
+            let intentos = 0;
+            const espera = setInterval(() => {
+                intentos++;
+                const listo = typeof productosInventario !== "undefined" && Array.isArray(productosInventario) && productosInventario.length > 0;
+                if (listo) { clearInterval(espera); pintarPremios(); }
+                else if (intentos > 300) {
+                    clearInterval(espera);
+                    $("premios-contenedor").innerHTML = `<div class="text-center text-gray-400 py-16 text-sm font-semibold">No se pudieron cargar los premios. Recarga la página.</div>`;
+                }
+            }, 50);
+        });
+    })();
+    </script>
+</body>
+</html>

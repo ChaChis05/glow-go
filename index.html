@@ -82,6 +82,7 @@
                 <a href="#sorteo" class="hover:text-[#D4AF37]">🎟️ <span class="text-[#D4AF37]">SORTEO TRIMESTRAL ACTIVO</span> — cada pedido es 1 ticket</a>
                 <span>🚚 Envíos a toda Colombia</span>
                 <span>💬 Atención por WhatsApp 24 horas: 313 423 7663</span>
+                <a href="premios-sorteo.html" class="hover:text-[#D4AF37]">🎁 Mira los premios del sorteo: tú escoges el tuyo</a>
                 <span>✨ <span class="cifra-productos-texto">Más de 1.100</span> productos en un solo lugar</span>
                 <a href="#sorteo" class="hover:text-[#D4AF37]">⏳ El sorteo cierra el <span class="sorteo-fin-texto">31 de diciembre</span></a>
             </div>
@@ -89,6 +90,7 @@
                 <a href="#sorteo" class="hover:text-[#D4AF37]" tabindex="-1">🎟️ <span class="text-[#D4AF37]">SORTEO TRIMESTRAL ACTIVO</span> — cada pedido es 1 ticket</a>
                 <span>🚚 Envíos a toda Colombia</span>
                 <span>💬 Atención por WhatsApp 24 horas: 313 423 7663</span>
+                <a href="premios-sorteo.html" class="hover:text-[#D4AF37]">🎁 Mira los premios del sorteo: tú escoges el tuyo</a>
                 <span>✨ <span class="cifra-productos-texto">Más de 1.100</span> productos en un solo lugar</span>
                 <a href="#sorteo" class="hover:text-[#D4AF37]" tabindex="-1">⏳ El sorteo cierra el <span class="sorteo-fin-texto">31 de diciembre</span></a>
             </div>
@@ -126,6 +128,7 @@
                         <!-- Se llena dinámicamente -->
                     </div>
                 </div>
+                <a href="premios-sorteo.html" class="text-xs sm:text-sm font-semibold text-[#B8860B] hover:text-[#7A1C32] transition-colors whitespace-nowrap">🎟️ Premios</a>
             </nav>
 
             <!-- Zona derecha: Buscador, Usuario y Carrito -->
@@ -266,8 +269,8 @@
                         Participan todas las compras del <strong id="sorteo-rango" class="text-[#D4AF37]">1 de octubre al 31 de diciembre</strong>.
                         Cada pedido, sin importar su valor, te da <strong>1 ticket</strong> para el sorteo.
                     </p>
-                    <p id="sorteo-premio" class="text-sm sm:text-base font-bold bg-white/10 border border-white/15 rounded-2xl px-4 py-3 inline-block">
-                        🎁 Premio sorpresa — lo revelamos muy pronto en nuestras redes
+                    <p class="text-sm sm:text-base font-bold bg-white/10 border border-white/15 rounded-2xl px-4 py-3 inline-block">
+                        🎁 Si ganas, <u>tú escoges tu premio</u>: <a href="premios-sorteo.html" class="text-[#D4AF37] underline">mira las opciones</a>
                     </p>
 
                     <!-- Cuenta regresiva -->
@@ -311,7 +314,10 @@
                             <div><p class="font-extrabold text-sm sm:text-base">Espera el sorteo</p><p class="text-xs sm:text-sm text-gray-500">Al cerrar el trimestre sorteamos entre todos los tickets y le avisamos al ganador por WhatsApp.</p></div>
                         </li>
                     </ol>
-                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a href="premios-sorteo.html" class="mt-6 flex items-center justify-center gap-2 bg-[#D4AF37] hover:bg-amber-400 text-[#521221] font-black text-sm py-3 rounded-xl transition-all shadow-md hover:-translate-y-0.5">
+                        🎁 Ver los premios <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <a href="catalogo.html" class="text-center bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold text-sm py-3 rounded-xl transition-all shadow-md"><i class="fa-solid fa-ticket mr-1.5"></i> Quiero mi ticket</a>
                         <a href="https://wa.me/573134237663?text=Hola,%20quiero%20participar%20en%20el%20sorteo%20trimestral%20de%20Glow%20%26%20Go" target="_blank" class="text-center bg-green-500 hover:bg-green-600 text-white font-extrabold text-sm py-3 rounded-xl transition-all shadow-md"><i class="fa-brands fa-whatsapp mr-1.5"></i> Preguntar</a>
                     </div>
@@ -446,9 +452,6 @@
     (function () {
         "use strict";
 
-        /* ✏️ Escribe aquí el premio del trimestre cuando lo tengas (déjalo vacío para "Premio sorpresa"). */
-        const PREMIO_SORTEO = "";
-
         const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
         const MESES_CORTOS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
@@ -471,7 +474,6 @@
         document.querySelectorAll(".sorteo-fin-texto").forEach(el => {
             el.textContent = ultimoDia.getDate() + " de " + MESES[ultimoDia.getMonth()];
         });
-        if (PREMIO_SORTEO) $("sorteo-premio").textContent = "🎁 Premio: " + PREMIO_SORTEO;
 
         const dos = (n) => String(n).padStart(2, "0");
         function tic() {
