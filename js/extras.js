@@ -31,6 +31,9 @@
         '.glow-agotado{position:relative}',
         '.glow-agotado img{filter:grayscale(1);opacity:.55}',
         '.glow-agotado::after{content:"AGOTADO";position:absolute;top:.6rem;left:.6rem;background:#dc2626;color:#fff;font-size:.65rem;font-weight:800;letter-spacing:.05em;padding:.2rem .5rem;border-radius:.4rem;z-index:2}',
+        /* Botón de editar precio (solo en modo edición de la administradora) */
+        '.glow-editar-precio{display:none;align-items:center;justify-content:center;gap:.35rem;width:100%;margin:-.2rem 0 .5rem;padding:.3rem .5rem;border-radius:.6rem;font-size:.7rem;font-weight:800;background:#fef3c7;color:#92400e;outline:2px dashed rgba(146,64,14,.45);outline-offset:2px;cursor:pointer;position:relative;z-index:3}',
+        'body.glow-editando .glow-editar-precio{display:flex}',
         '.glow-btn-agotado{background:#9ca3af!important;border-color:#9ca3af!important;color:#fff!important;cursor:not-allowed!important;pointer-events:none}',
 
         /* Aviso */
@@ -125,15 +128,49 @@
     }
 
     /* ---------- 4. Productos agotados ---------- */
-    var AGOTADOS = new Set();
+    var AGOTADOS = new Set();          // marcados a mano por la administradora (Firestore)
+    var AGOTADOS_DIST = new Set();     // agotados en Emprendered (archivo agotados-distribuidor.json)
+    var DISPONIBLES_DIST = new Set();  // con existencias en Emprendered (mandan sobre la marca manual)
+
+    function clavePrecioDe(p) {
+        return (p && typeof window.glowClavePrecio === "function") ? window.glowClavePrecio(p.sku, p.nombre) : "";
+    }
 
     function claveSku(p) {
         return String((p && p.sku) || "").trim().toUpperCase();
     }
 
     window.productoAgotado = function (p) {
-        return !!p && AGOTADOS.has(claveSku(p));
+        if (!p) return false;
+        var c = clavePrecioDe(p);
+        if (DISPONIBLES_DIST.has(c)) return false;   // Emprendered lo tiene: disponible
+        if (AGOTADOS_DIST.has(c)) return true;       // Emprendered no lo tiene: agotado
+        return AGOTADOS.has(claveSku(p));            // productos propios: marca manual
     };
+    // "agotado" / "disponible" si el estado lo controla Emprendered; "" si es manual
+    window.glowEstadoDistribuidor = function (clave) {
+        clave = String(clave || "");
+        if (AGOTADOS_DIST.has(clave)) return "agotado";
+        if (DISPONIBLES_DIST.has(clave)) return "disponible";
+        return "";
+    };
+
+    // Botón "Editar precio" debajo de la barra Disponible/Agotado (se ve solo en modo edición)
+    function asegurarBotonPrecio(barra, p) {
+        var clave = clavePrecioDe(p);
+        if (!clave) return;
+        barra.dataset.clave = clave;
+        var b = barra.nextElementSibling;
+        if (!b || !b.classList.contains("glow-editar-precio")) {
+            b = document.createElement("span");
+            b.className = "glow-editar-precio";
+            b.setAttribute("role", "button");
+            b.innerHTML = '<i class="fa-solid fa-pen"></i> Editar precio';
+            barra.parentNode.insertBefore(b, barra.nextSibling);
+        }
+        if (b.dataset.clave !== clave) b.dataset.clave = clave;
+        if (b.dataset.sku !== claveSku(p)) b.dataset.sku = claveSku(p);
+    }
 
     // Punto de conexión: más adelante Firebase llamará a esta función con la lista de SKUs agotados
     window.glowActualizarAgotados = function (lista) {
@@ -222,6 +259,7 @@
         barra.dataset.sku = claveSku(p);
         if (barra.className !== clase) barra.className = clase;
         if (barra.textContent !== texto) barra.textContent = texto;
+        asegurarBotonPrecio(barra, p);
 
         card.classList.toggle("glow-agotado", agotado);
 
@@ -259,6 +297,7 @@
             barra.dataset.sku = claveSku(p);
             if (barra.className !== clase) barra.className = clase;
             if (barra.textContent !== texto) barra.textContent = texto;
+        asegurarBotonPrecio(barra, p);
 
             card.classList.toggle("glow-agotado", agotado);
         });
@@ -443,6 +482,17 @@
         fetch("agotados.json?v=" + Date.now(), { cache: "no-store" })
             .then(function (r) { return r.ok ? r.json() : []; })
             .then(function (lista) { if (Array.isArray(lista)) window.glowActualizarAgotados(lista); })
+            .catch(function () {});
+
+        // Agotados en el distribuidor (Emprendered): lista de claves "SKU|NOMBRE"
+        fetch("agotados-distribuidor.json?v=" + Math.floor(Date.now() / 300000), { cache: "no-store" })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d) return;
+                AGOTADOS_DIST = new Set((d.agotados || []).map(String));
+                DISPONIBLES_DIST = new Set((d.disponibles || []).map(String));
+                decorar();
+            })
             .catch(function () {});
     }
 
