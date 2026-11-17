@@ -38,6 +38,7 @@
         #toast-admin.visible { opacity: 1; transform: translate(-50%, 0); }
         #toast-admin.error { background: #b91c1c; }
     </style>
+    <script src="js/precios.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
@@ -96,10 +97,11 @@
                 <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"><p class="text-[11px] font-bold text-gray-400 uppercase">Usuarios registrados</p><p id="stat-usuarios" class="text-2xl font-black text-gray-800">0</p></div>
             </div>
 
-            <div class="flex gap-2 mb-6">
+            <div class="flex flex-wrap gap-2 mb-6">
                 <button id="tab-pedidos" onclick="mostrarTab('pedidos')" class="tab-activa px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-box mr-1.5"></i> Pedidos</button>
                 <button id="tab-usuarios" onclick="mostrarTab('usuarios')" class="px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-users mr-1.5"></i> Usuarios</button>
                 <button id="tab-sorteo" onclick="mostrarTab('sorteo')" class="px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-ticket mr-1.5"></i> Sorteo</button>
+                <button id="tab-precios" onclick="mostrarTab('precios')" class="px-5 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer transition-colors bg-gray-100 text-gray-700"><i class="fa-solid fa-tags mr-1.5"></i> Precios <span id="precios-badge" class="hidden ml-1 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span></button>
             </div>
 
             <section id="seccion-pedidos">
@@ -216,6 +218,25 @@
                     <div id="sorteo-historial" class="mt-4 text-xs text-amber-100 space-y-1"></div>
                 </div>
             </section>
+
+            <!-- PRECIOS (solo administradora) -->
+            <section id="seccion-precios" class="hidden space-y-4">
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h2 class="text-lg font-black text-gray-800"><i class="fa-solid fa-tags text-[#7A1C32] mr-1.5"></i> Precios de productos</h2>
+                            <p class="text-xs text-gray-500">Escribe el precio y pulsa <strong>Guardar</strong> (o Enter). Se actualiza en la tienda al instante, sin tocar el CSV. Los productos en <strong>$0</strong> no se muestran a los clientes hasta que les pongas precio.</p>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button id="precios-ver-pend" type="button" class="tab-activa px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer bg-gray-100 text-gray-700">Pendientes ($0) <span id="precios-n-pend">0</span></button>
+                            <button id="precios-ver-todos" type="button" class="px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer bg-gray-100 text-gray-700">Todos</button>
+                        </div>
+                    </div>
+                    <input id="precios-filtro" type="text" placeholder="Buscar por nombre, categoría o SKU..." class="w-full mb-4 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                    <div id="precios-lista" class="divide-y divide-gray-100"></div>
+                    <p id="precios-info" class="text-center text-xs text-gray-400 py-4"></p>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -257,6 +278,9 @@
             $("tab-pedidos").classList.toggle("tab-activa", cual === "pedidos");
             $("tab-usuarios").classList.toggle("tab-activa", cual === "usuarios");
             $("tab-sorteo").classList.toggle("tab-activa", cual === "sorteo");
+            $("seccion-precios").classList.toggle("hidden", cual !== "precios");
+            $("tab-precios").classList.toggle("tab-activa", cual === "precios");
+            if (cual === "precios") cargarPreciosPanel();
         };
 
         /* ---------- Pedidos ---------- */
@@ -699,6 +723,148 @@
             $("admin-acceso").classList.remove("hidden");
         }
 
+        /* ---------- Precios ---------- */
+        let productosPanel = [];       // productos únicos del CSV
+        let preciosPanel = {};         // precios guardados desde el panel (Firestore)
+        let verPendientes = true;
+        let csvCargado = null;
+
+        function precioEfectivo(p) {
+            return Object.prototype.hasOwnProperty.call(preciosPanel, p.clave) ? Number(preciosPanel[p.clave]) || 0 : p.precioCsv;
+        }
+        function pesos(n) { return "$" + Number(n || 0).toLocaleString("es-CO"); }
+        function rutaImagen(nombre) {
+            let n = String(nombre || "").split(",")[0].trim();
+            if (!n) return "";
+            if (!/\.(webp|jpg|jpeg|png)$/i.test(n)) n += ".webp";
+            return n.includes("IMAGENES PRODUCTOS") ? n : "IMAGENES PRODUCTOS/" + n;
+        }
+
+        function cargarPreciosPanel() {
+            if (csvCargado) return csvCargado;
+            csvCargado = window.glowCsvCrudo().then((texto) => {
+                const lineas = texto.split("\n");
+                const cab = lineas[0].split(";").map(h => h.trim().replace(/^"|"$/g, "").replace(/^\ufeff/, ""));
+                const ix = (n) => cab.indexOf(n);
+                const iCat = ix("Categoría"), iNom = ix("Nombre del Producto"), iSku = ix("Referencia / SKU"), iPre = ix("Precio"), iImg = ix("Imagen (Nombre o URL)");
+                const mapa = new Map();
+                for (let i = 1; i < lineas.length; i++) {
+                    if (!lineas[i].trim()) continue;
+                    const c = lineas[i].replace(/\r$/, "").split(";").map(x => x.trim().replace(/^"|"$/g, ""));
+                    const nombre = c[iNom] || "", sku = c[iSku] || "";
+                    if (!nombre) continue;
+                    const clave = window.glowClavePrecio(sku, nombre);
+                    const cat = (c[iCat] || "").toUpperCase();
+                    if (mapa.has(clave)) {
+                        const p = mapa.get(clave);
+                        if (cat && !p.categorias.includes(cat)) p.categorias.push(cat);
+                        continue;
+                    }
+                    mapa.set(clave, { clave, nombre, sku, categorias: cat ? [cat] : [], precioCsv: convertirPrecioANumero(c[iPre]), imagen: rutaImagen(c[iImg]) });
+                }
+                productosPanel = [...mapa.values()];
+                renderizarPrecios();
+            }).catch((e) => {
+                console.error(e);
+                csvCargado = null;
+                aviso("No se pudo leer el catálogo.", true);
+            });
+            return csvCargado;
+        }
+
+        function renderizarPrecios() {
+            const pendientes = productosPanel.filter(p => precioEfectivo(p) === 0);
+            $("precios-n-pend").textContent = pendientes.length;
+            $("precios-badge").textContent = pendientes.length;
+            $("precios-badge").classList.toggle("hidden", pendientes.length === 0);
+            $("precios-ver-pend").classList.toggle("tab-activa", verPendientes);
+            $("precios-ver-todos").classList.toggle("tab-activa", !verPendientes);
+
+            const activo = document.activeElement;
+            if (activo && activo.closest && activo.closest("#precios-lista") && activo.tagName === "INPUT") return; // no interrumpir mientras escribe
+
+            const f = normalizarTexto($("precios-filtro").value || "");
+            let lista = verPendientes ? pendientes : productosPanel;
+            if (f) lista = lista.filter(p => normalizarTexto(p.nombre + " " + p.sku + " " + p.categorias.join(" ")).includes(f));
+            const MAX = 150;
+            const visibles = lista.slice(0, MAX);
+
+            $("precios-lista").innerHTML = visibles.map(p => {
+                const ef = precioEfectivo(p);
+                const editado = Object.prototype.hasOwnProperty.call(preciosPanel, p.clave);
+                return `
+                <div class="flex items-center gap-3 py-3" data-clave="${esc(p.clave)}">
+                    <img src="${esc(p.imagen)}" alt="" loading="lazy" class="w-14 h-14 object-cover rounded-xl bg-gray-100 shrink-0" onerror="this.style.visibility='hidden'">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-gray-800 truncate">${esc(p.nombre)}</p>
+                        <p class="text-[11px] text-gray-400 truncate">${esc(p.categorias.join(" · "))} · SKU ${esc(p.sku || "—")}</p>
+                        <p class="text-[11px] ${ef === 0 ? "text-amber-600 font-bold" : "text-gray-500"}">${ef === 0 ? "Sin precio — oculto en la tienda" : "En tienda: " + pesos(ef)}${editado && p.precioCsv !== ef ? ` <span class="text-gray-400 font-normal">(CSV: ${pesos(p.precioCsv)})</span>` : ""}</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <div class="relative">
+                            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                            <input type="text" inputmode="numeric" value="${ef ? ef.toLocaleString("es-CO") : ""}" placeholder="0" class="precio-input w-28 pl-6 pr-2 py-2 border border-gray-200 rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                        </div>
+                        <button type="button" class="precio-guardar bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold px-3 py-2 rounded-xl text-xs cursor-pointer">Guardar</button>
+                    </div>
+                </div>`;
+            }).join("");
+
+            $("precios-info").textContent = lista.length === 0
+                ? (verPendientes ? "¡Todos los productos tienen precio! 🎉" : "No hay productos que coincidan.")
+                : (lista.length > MAX ? `Mostrando ${MAX} de ${lista.length}. Usa el buscador para encontrar otros.` : `${lista.length} producto(s)`);
+        }
+
+        async function guardarPrecio(fila) {
+            const clave = fila.dataset.clave;
+            const input = fila.querySelector(".precio-input");
+            const valor = Number(String(input.value).replace(/[^0-9]/g, "")) || 0;
+            const btn = fila.querySelector(".precio-guardar");
+            btn.disabled = true;
+            try {
+                await setDoc(doc(db, "config", "agotados"), { precios: { [clave]: valor } }, { merge: true });
+                input.blur();
+                aviso(valor ? "Precio guardado: " + pesos(valor) : "Guardado en $0 (oculto en la tienda)");
+            } catch (e) {
+                console.error(e);
+                aviso("No se pudo guardar el precio.", true);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        $("precios-lista").addEventListener("click", (e) => {
+            const b = e.target.closest(".precio-guardar");
+            if (b) guardarPrecio(b.closest("[data-clave]"));
+        });
+        $("precios-lista").addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && e.target.classList.contains("precio-input")) {
+                e.preventDefault();
+                guardarPrecio(e.target.closest("[data-clave]"));
+            }
+        });
+        $("precios-lista").addEventListener("input", (e) => {
+            if (!e.target.classList.contains("precio-input")) return;
+            const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
+            e.target.value = n ? n.toLocaleString("es-CO") : "";
+        });
+        $("precios-lista").addEventListener("focusout", () => setTimeout(() => {
+            const a = document.activeElement;
+            if (!(a && a.closest && a.closest("#precios-lista") && a.tagName === "INPUT")) renderizarPrecios();
+        }, 150));
+        $("precios-filtro").addEventListener("input", renderizarPrecios);
+        $("precios-ver-pend").addEventListener("click", () => { verPendientes = true; renderizarPrecios(); });
+        $("precios-ver-todos").addEventListener("click", () => { verPendientes = false; renderizarPrecios(); });
+
+        function suscribirPrecios() {
+            onSnapshot(doc(db, "config", "agotados"), (snap) => {
+                const d = snap.exists() ? snap.data() : {};
+                preciosPanel = (d && d.precios) || {};
+                if (productosPanel.length) renderizarPrecios();
+            }, (err) => console.error("No se pudieron leer los precios:", err));
+            cargarPreciosPanel();   // para el contador de pendientes en la pestaña
+        }
+
         const user = await usuarioListo;
         if (!user) {
             mostrarAcceso("Área protegida", "Inicia sesión con la cuenta de administradora para ver este panel.", true);
@@ -729,6 +895,7 @@
 
             llenarSelectorTrimestres();
             suscribirSorteo();
+            suscribirPrecios();
         }
     </script>
 </body>
