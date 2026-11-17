@@ -2,7 +2,9 @@
    Glow & Go - firebase-glow.js
    - Lee en tiempo real la lista de productos agotados (Firestore)
    - Etiqueta flotante para la administradora con interruptor de
-     "Edición de agotados" (ACTIVADA / DESACTIVADA)
+     "Edición de agotados y precios" (ACTIVADA / DESACTIVADA)
+   - En modo edición: clic en la barra = Disponible/Agotado;
+     botón "Editar precio" = cambia el precio (se guarda en Firestore)
    - También se puede entrar abriendo cualquier página con #admin al final
    Se carga con: <script type="module" src="js/firebase-glow.js"></script>
    DESPUÉS de js/extras.js
@@ -32,6 +34,13 @@ estilo.textContent = `
     #glow-admin-modal input{width:100%;border:1px solid #e5e7eb;border-radius:.75rem;padding:.7rem .9rem;font-size:.9rem;margin-bottom:.6rem;box-sizing:border-box}
     #glow-admin-modal .btn{width:100%;background:#7A1C32;color:#fff;border:0;border-radius:.75rem;padding:.75rem;font-weight:800;cursor:pointer}
     #glow-admin-modal .cerrar{width:100%;background:none;border:0;color:#6b7280;margin-top:.5rem;font-size:.8rem;cursor:pointer}
+    #glow-precio-modal{position:fixed;inset:0;z-index:400000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1rem}
+    #glow-precio-modal .caja{background:#fff;border-radius:1.25rem;max-width:22rem;width:100%;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:inherit}
+    #glow-precio-modal h2{font-size:1rem;font-weight:900;color:#111827;margin:0 0 .25rem}
+    #glow-precio-modal p{font-size:.75rem;color:#6b7280;margin:0 0 .8rem}
+    #glow-precio-modal input{width:100%;border:1px solid #e5e7eb;border-radius:.75rem;padding:.7rem .9rem;font-size:1.1rem;font-weight:800;margin-bottom:.6rem;box-sizing:border-box;text-align:right}
+    #glow-precio-modal .btn{width:100%;background:#7A1C32;color:#fff;border:0;border-radius:.75rem;padding:.75rem;font-weight:800;cursor:pointer}
+    #glow-precio-modal .cerrar{width:100%;background:none;border:0;color:#6b7280;margin-top:.5rem;font-size:.8rem;cursor:pointer}
     #glow-admin-modal .err{color:#b91c1c;font-size:.78rem;font-weight:700;margin-bottom:.5rem;display:none}
 `;
 document.head.appendChild(estilo);
@@ -66,7 +75,7 @@ function pintarChip() {
     if (esAdmin) {
         chip.innerHTML =
             '<span><i class="fa-solid fa-user-shield"></i> Administradora</span>' +
-            '<button type="button" data-act="editar" class="' + (editando ? "on" : "") + '">Edición de agotados: ' + (editando ? "ACTIVADA" : "DESACTIVADA") + '</button>' +
+            '<button type="button" data-act="editar" class="' + (editando ? "on" : "") + '">Edición de agotados y precios: ' + (editando ? "ACTIVADA" : "DESACTIVADA") + '</button>' +
             '<button type="button" data-act="salir">Salir</button>';
     }
 
@@ -103,6 +112,11 @@ document.addEventListener("click", async (e) => {
     if (!barra) return;
     e.preventDefault();
     e.stopPropagation();
+
+    if (typeof window.glowAgotadoDistribuidor === "function" && window.glowAgotadoDistribuidor(barra.dataset.clave)) {
+        alert("Este producto está agotado en Emprendered (distribuidor). Se marca automáticamente y volverá a 'Disponible' cuando el distribuidor tenga existencias.");
+        return;
+    }
 
     const sku = barra.dataset.sku;
     const agotado = listaActual.includes(sku);
@@ -159,3 +173,113 @@ function revisarHash() {
 }
 window.addEventListener("hashchange", revisarHash);
 setTimeout(revisarHash, 1200);
+
+/* ---------- Editar precio desde la tienda (modo edición) ---------- */
+function listasProductos() {
+    const listas = [];
+    try { if (typeof listaProductosGlobal !== "undefined") listas.push(listaProductosGlobal); } catch (e) {}
+    try { if (typeof productosCargados !== "undefined") listas.push(productosCargados); } catch (e) {}
+    try { if (typeof productosInventario !== "undefined") listas.push(productosInventario); } catch (e) {}
+    return listas;
+}
+function productosConClave(clave) {
+    const res = [];
+    listasProductos().forEach((l) => (l || []).forEach((p) => {
+        if (window.glowClavePrecio && window.glowClavePrecio(p.sku, p.nombre) === clave) res.push(p);
+    }));
+    return res;
+}
+function precioActual(p) {
+    return Number(p.precioNum) || Number(String(p.precio || p.precioStr || "").replace(/[^0-9]/g, "")) || 0;
+}
+const formatoPrecio = (n) => "$" + Number(n || 0).toLocaleString("es-CO");
+
+// Cambia el texto del precio en la tarjeta / ventana sin recargar la página
+function actualizarPantalla(boton, anterior, nuevo) {
+    const contenedor = boton.closest("article") || boton.closest(".rounded-3xl") || boton.closest(".rounded-2xl") || boton.parentElement;
+    const textos = new Set([formatoPrecio(anterior), "$" + Number(anterior).toLocaleString(), "$" + Number(anterior).toLocaleString("es-CO")]);
+    const zonas = [contenedor];
+    const modalPrecio = document.getElementById("modal-precio");
+    if (modalPrecio && contenedor && contenedor.contains(boton) && document.getElementById("modal-btn-agregar")) zonas.push(modalPrecio.parentElement);
+    zonas.forEach((z) => {
+        if (!z) return;
+        z.querySelectorAll("*").forEach((el) => {
+            if (el.children.length === 0 && textos.has(el.textContent.trim())) el.textContent = formatoPrecio(nuevo);
+        });
+    });
+}
+
+function abrirEditorPrecio(boton) {
+    if (document.getElementById("glow-precio-modal")) return;
+    const clave = boton.dataset.clave;
+    const productos = productosConClave(clave);
+    const p = productos[0];
+    if (!p) { alert("No encontré este producto en la lista."); return; }
+    const anterior = precioActual(p);
+
+    const m = document.createElement("div");
+    m.id = "glow-precio-modal";
+    m.innerHTML = `
+        <div class="caja">
+            <h2></h2>
+            <p></p>
+            <input type="text" inputmode="numeric" id="glow-precio-valor">
+            <button class="btn" type="button" id="glow-precio-guardar">Guardar precio</button>
+            <button class="cerrar" type="button" id="glow-precio-cerrar">Cancelar</button>
+        </div>`;
+    m.querySelector("h2").textContent = p.nombre;
+    m.querySelector("p").textContent = "Precio actual: " + formatoPrecio(anterior) + " · SKU " + (p.sku || "—");
+    document.body.appendChild(m);
+
+    const input = m.querySelector("#glow-precio-valor");
+    input.value = anterior ? anterior.toLocaleString("es-CO") : "";
+    input.addEventListener("input", () => {
+        const n = Number(input.value.replace(/[^0-9]/g, "")) || 0;
+        input.value = n ? n.toLocaleString("es-CO") : "";
+    });
+    const cerrar = () => m.remove();
+    m.querySelector("#glow-precio-cerrar").addEventListener("click", cerrar);
+    m.addEventListener("click", (e) => { if (e.target === m) cerrar(); });
+
+    async function guardar() {
+        const nuevo = Number(input.value.replace(/[^0-9]/g, "")) || 0;
+        const btn = m.querySelector("#glow-precio-guardar");
+        btn.disabled = true;
+        btn.textContent = "Guardando...";
+        try {
+            await setDoc(refAgotados, { precios: { [clave]: nuevo } }, { merge: true });
+            // memoria local para que al recargar ya salga el precio nuevo
+            try {
+                const cache = JSON.parse(localStorage.getItem("glowPreciosCache") || "{}") || {};
+                cache[clave] = nuevo;
+                localStorage.setItem("glowPreciosCache", JSON.stringify(cache));
+            } catch (e) {}
+            productos.forEach((x) => {
+                x.precioNum = nuevo;
+                x.precio = formatoPrecio(nuevo);
+                x.precioStr = formatoPrecio(nuevo);
+            });
+            actualizarPantalla(boton, anterior, nuevo);
+            cerrar();
+            if (!nuevo) alert("Guardado en $0: el producto dejará de mostrarse en la tienda al recargar.");
+        } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            btn.textContent = "Guardar precio";
+            alert("No se pudo guardar el precio. Verifica que iniciaste sesión como administradora.");
+        }
+    }
+    m.querySelector("#glow-precio-guardar").addEventListener("click", guardar);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") guardar(); });
+    input.focus();
+    input.select();
+}
+
+document.addEventListener("click", (e) => {
+    const b = e.target.closest(".glow-editar-precio[data-clave]");
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!esAdmin || !editando) return;
+    abrirEditorPrecio(b);
+}, true);

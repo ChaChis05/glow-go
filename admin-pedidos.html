@@ -225,7 +225,7 @@
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
                         <div>
                             <h2 class="text-lg font-black text-gray-800"><i class="fa-solid fa-tags text-[#7A1C32] mr-1.5"></i> Precios de productos</h2>
-                            <p class="text-xs text-gray-500">Escribe el precio y pulsa <strong>Guardar</strong> (o Enter). Se actualiza en la tienda al instante, sin tocar el CSV. Los productos en <strong>$0</strong> no se muestran a los clientes hasta que les pongas precio.</p>
+                            <p class="text-xs text-gray-500">Escribe todos los precios que quieras (Enter pasa al siguiente) y al final pulsa <strong>Guardar cambios</strong>. Se actualizan en la tienda al instante, sin tocar el CSV. Los productos en <strong>$0</strong> no se muestran a los clientes hasta que les pongas precio.</p>
                         </div>
                         <div class="flex gap-2 shrink-0">
                             <button id="precios-ver-pend" type="button" class="tab-activa px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer bg-gray-100 text-gray-700">Pendientes ($0) <span id="precios-n-pend">0</span></button>
@@ -235,6 +235,13 @@
                     <input id="precios-filtro" type="text" placeholder="Buscar por nombre, categoría o SKU..." class="w-full mb-4 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                     <div id="precios-lista" class="divide-y divide-gray-100"></div>
                     <p id="precios-info" class="text-center text-xs text-gray-400 py-4"></p>
+                </div>
+                <div id="precios-barra" class="hidden sticky bottom-4 z-40 bg-[#7A1C32] text-white rounded-2xl shadow-xl px-4 py-3 flex items-center justify-between gap-3">
+                    <span class="text-sm font-bold"><span id="precios-n-cambios">0</span> precio(s) sin guardar</span>
+                    <div class="flex gap-2">
+                        <button id="precios-descartar" type="button" class="bg-white/15 hover:bg-white/25 font-extrabold px-4 py-2 rounded-xl text-xs cursor-pointer">Descartar</button>
+                        <button id="precios-guardar-todo" type="button" class="bg-[#D4AF37] hover:bg-amber-400 text-[#521221] font-black px-5 py-2 rounded-xl text-sm cursor-pointer"><i class="fa-solid fa-floppy-disk mr-1"></i> Guardar cambios</button>
+                    </div>
                 </div>
             </section>
         </div>
@@ -728,6 +735,7 @@
         let preciosPanel = {};         // precios guardados desde el panel (Firestore)
         let verPendientes = true;
         let csvCargado = null;
+        let cambiosPrecios = {};       // precios escritos y aún sin guardar
 
         function precioEfectivo(p) {
             return Object.prototype.hasOwnProperty.call(preciosPanel, p.clave) ? Number(preciosPanel[p.clave]) || 0 : p.precioCsv;
@@ -792,6 +800,8 @@
             $("precios-lista").innerHTML = visibles.map(p => {
                 const ef = precioEfectivo(p);
                 const editado = Object.prototype.hasOwnProperty.call(preciosPanel, p.clave);
+                const pendiente = Object.prototype.hasOwnProperty.call(cambiosPrecios, p.clave);
+                const valor = pendiente ? cambiosPrecios[p.clave] : ef;
                 return `
                 <div class="flex items-center gap-3 py-3" data-clave="${esc(p.clave)}">
                     <img src="${esc(p.imagen)}" alt="" loading="lazy" class="w-14 h-14 object-cover rounded-xl bg-gray-100 shrink-0" onerror="this.style.visibility='hidden'">
@@ -803,9 +813,8 @@
                     <div class="flex items-center gap-2 shrink-0">
                         <div class="relative">
                             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                            <input type="text" inputmode="numeric" value="${ef ? ef.toLocaleString("es-CO") : ""}" placeholder="0" class="precio-input w-28 pl-6 pr-2 py-2 border border-gray-200 rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
+                            <input type="text" inputmode="numeric" enterkeyhint="next" value="${valor ? valor.toLocaleString("es-CO") : ""}" placeholder="0" class="precio-input w-28 pl-6 pr-2 py-2 border ${pendiente ? "border-amber-400 bg-amber-50" : "border-gray-200"} rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#7A1C32]">
                         </div>
-                        <button type="button" class="precio-guardar bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold px-3 py-2 rounded-xl text-xs cursor-pointer">Guardar</button>
                     </div>
                 </div>`;
             }).join("");
@@ -815,38 +824,64 @@
                 : (lista.length > MAX ? `Mostrando ${MAX} de ${lista.length}. Usa el buscador para encontrar otros.` : `${lista.length} producto(s)`);
         }
 
-        async function guardarPrecio(fila) {
-            const clave = fila.dataset.clave;
-            const input = fila.querySelector(".precio-input");
-            const valor = Number(String(input.value).replace(/[^0-9]/g, "")) || 0;
-            const btn = fila.querySelector(".precio-guardar");
+        function pintarBarraCambios() {
+            const n = Object.keys(cambiosPrecios).length;
+            $("precios-n-cambios").textContent = n;
+            $("precios-barra").classList.toggle("hidden", n === 0);
+        }
+
+        async function guardarTodosLosPrecios() {
+            const lote = { ...cambiosPrecios };
+            const n = Object.keys(lote).length;
+            if (!n) return;
+            const btn = $("precios-guardar-todo");
             btn.disabled = true;
             try {
-                await setDoc(doc(db, "config", "agotados"), { precios: { [clave]: valor } }, { merge: true });
-                input.blur();
-                aviso(valor ? "Precio guardado: " + pesos(valor) : "Guardado en $0 (oculto en la tienda)");
+                await setDoc(doc(db, "config", "agotados"), { precios: lote }, { merge: true });
+                Object.keys(lote).forEach(k => { if (cambiosPrecios[k] === lote[k]) delete cambiosPrecios[k]; });
+                if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+                pintarBarraCambios();
+                renderizarPrecios();
+                aviso(n === 1 ? "1 precio guardado" : n + " precios guardados");
             } catch (e) {
                 console.error(e);
-                aviso("No se pudo guardar el precio.", true);
+                aviso("No se pudieron guardar los precios.", true);
             } finally {
                 btn.disabled = false;
             }
         }
 
-        $("precios-lista").addEventListener("click", (e) => {
-            const b = e.target.closest(".precio-guardar");
-            if (b) guardarPrecio(b.closest("[data-clave]"));
+        $("precios-guardar-todo").addEventListener("click", guardarTodosLosPrecios);
+        $("precios-descartar").addEventListener("click", () => {
+            if (!confirm("¿Descartar los precios que no has guardado?")) return;
+            cambiosPrecios = {};
+            pintarBarraCambios();
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+            renderizarPrecios();
+        });
+        window.addEventListener("beforeunload", (e) => {
+            if (Object.keys(cambiosPrecios).length) { e.preventDefault(); e.returnValue = ""; }
         });
         $("precios-lista").addEventListener("keydown", (e) => {
             if (e.key === "Enter" && e.target.classList.contains("precio-input")) {
                 e.preventDefault();
-                guardarPrecio(e.target.closest("[data-clave]"));
+                const todos = [...document.querySelectorAll("#precios-lista .precio-input")];
+                const sig = todos[todos.indexOf(e.target) + 1];
+                if (sig) { sig.focus(); sig.select(); } else e.target.blur();
             }
         });
         $("precios-lista").addEventListener("input", (e) => {
             if (!e.target.classList.contains("precio-input")) return;
             const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
             e.target.value = n ? n.toLocaleString("es-CO") : "";
+            const fila = e.target.closest("[data-clave]");
+            const p = productosPanel.find(x => x.clave === fila.dataset.clave);
+            if (!p) return;
+            if (n === precioEfectivo(p)) delete cambiosPrecios[p.clave];
+            else cambiosPrecios[p.clave] = n;
+            e.target.classList.toggle("border-amber-400", p.clave in cambiosPrecios);
+            e.target.classList.toggle("bg-amber-50", p.clave in cambiosPrecios);
+            pintarBarraCambios();
         });
         $("precios-lista").addEventListener("focusout", () => setTimeout(() => {
             const a = document.activeElement;
