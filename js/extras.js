@@ -130,6 +130,7 @@
     /* ---------- 4. Productos agotados ---------- */
     var AGOTADOS = new Set();          // marcados a mano por la administradora (Firestore)
     var AGOTADOS_DIST = new Set();     // agotados en Emprendered (archivo agotados-distribuidor.json)
+    var DISPONIBLES_DIST = new Set();  // con existencias en Emprendered (mandan sobre la marca manual)
 
     function clavePrecioDe(p) {
         return (p && typeof window.glowClavePrecio === "function") ? window.glowClavePrecio(p.sku, p.nombre) : "";
@@ -140,10 +141,18 @@
     }
 
     window.productoAgotado = function (p) {
-        return !!p && (AGOTADOS.has(claveSku(p)) || AGOTADOS_DIST.has(clavePrecioDe(p)));
+        if (!p) return false;
+        var c = clavePrecioDe(p);
+        if (DISPONIBLES_DIST.has(c)) return false;   // Emprendered lo tiene: disponible
+        if (AGOTADOS_DIST.has(c)) return true;       // Emprendered no lo tiene: agotado
+        return AGOTADOS.has(claveSku(p));            // productos propios: marca manual
     };
-    window.glowAgotadoDistribuidor = function (clave) {
-        return AGOTADOS_DIST.has(String(clave || ""));
+    // "agotado" / "disponible" si el estado lo controla Emprendered; "" si es manual
+    window.glowEstadoDistribuidor = function (clave) {
+        clave = String(clave || "");
+        if (AGOTADOS_DIST.has(clave)) return "agotado";
+        if (DISPONIBLES_DIST.has(clave)) return "disponible";
+        return "";
     };
 
     // Botón "Editar precio" debajo de la barra Disponible/Agotado (se ve solo en modo edición)
@@ -480,8 +489,8 @@
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (d) {
                 if (!d) return;
-                var lista = [].concat(d.agotados || [], d.noDisponibles || []);
-                AGOTADOS_DIST = new Set(lista.map(String));
+                AGOTADOS_DIST = new Set((d.agotados || []).map(String));
+                DISPONIBLES_DIST = new Set((d.disponibles || []).map(String));
                 decorar();
             })
             .catch(function () {});

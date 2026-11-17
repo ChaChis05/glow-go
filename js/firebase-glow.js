@@ -113,8 +113,11 @@ document.addEventListener("click", async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (typeof window.glowAgotadoDistribuidor === "function" && window.glowAgotadoDistribuidor(barra.dataset.clave)) {
-        alert("Este producto está agotado en Emprendered (distribuidor). Se marca automáticamente y volverá a 'Disponible' cuando el distribuidor tenga existencias.");
+    const estadoDist = typeof window.glowEstadoDistribuidor === "function" ? window.glowEstadoDistribuidor(barra.dataset.clave) : "";
+    if (estadoDist) {
+        alert(estadoDist === "agotado"
+            ? "Este producto está AGOTADO en Emprendered. Su estado se sincroniza con el distribuidor."
+            : "Este producto está DISPONIBLE en Emprendered. Su estado se sincroniza con el distribuidor.");
         return;
     }
 
