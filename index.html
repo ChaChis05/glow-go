@@ -38,11 +38,62 @@
         .zoom-container img {
             transition: transform 0.3s ease;
         }
+
+        /* ===== Inicio dinámico ===== */
+        @keyframes anuncioScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .anuncio-cinta { display: flex; width: max-content; animation: anuncioScroll 30s linear infinite; }
+
+        @keyframes brilloBadge { 0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,.7); } 50% { box-shadow: 0 0 0 10px rgba(212,175,55,0); } }
+        .badge-sorteo { animation: brilloBadge 2s ease-in-out infinite; }
+
+        @keyframes flotar { 0%,100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-12px) rotate(4deg); } }
+        .ticket-flotante { animation: flotar 4s ease-in-out infinite; }
+
+        @keyframes destello { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .texto-dorado {
+            background: linear-gradient(90deg, #D4AF37 0%, #fff3c4 25%, #D4AF37 50%, #fff3c4 75%, #D4AF37 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            animation: destello 4s linear infinite;
+        }
+
+        .revelar { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
+        .revelar.visible { opacity: 1; transform: none; }
+
+        .cuenta-caja { min-width: 64px; }
+        @media (min-width: 640px) { .cuenta-caja { min-width: 88px; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .anuncio-cinta, .badge-sorteo, .ticket-flotante, .texto-dorado, .animate-cinta { animation: none !important; }
+            .revelar { opacity: 1; transform: none; }
+        }
     </style>
     <script src="js/precios.js"></script>
 </head>
 
 <body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- ========================================== -->
+    <!-- 📢 CINTA DE ANUNCIOS -->
+    <!-- ========================================== -->
+    <div class="bg-[#521221] text-white text-[11px] sm:text-xs font-bold overflow-hidden py-2" aria-label="Anuncios">
+        <div class="anuncio-cinta">
+            <div class="flex items-center gap-10 pr-10 whitespace-nowrap">
+                <a href="#sorteo" class="hover:text-[#D4AF37]">🎟️ <span class="text-[#D4AF37]">SORTEO TRIMESTRAL ACTIVO</span> — cada pedido es 1 ticket</a>
+                <span>🚚 Envíos a toda Colombia</span>
+                <span>💬 Atención por WhatsApp 24 horas: 313 423 7663</span>
+                <span>✨ <span class="cifra-productos-texto">Más de 1.100</span> productos en un solo lugar</span>
+                <a href="#sorteo" class="hover:text-[#D4AF37]">⏳ El sorteo cierra el <span class="sorteo-fin-texto">31 de diciembre</span></a>
+            </div>
+            <div class="flex items-center gap-10 pr-10 whitespace-nowrap" aria-hidden="true">
+                <a href="#sorteo" class="hover:text-[#D4AF37]" tabindex="-1">🎟️ <span class="text-[#D4AF37]">SORTEO TRIMESTRAL ACTIVO</span> — cada pedido es 1 ticket</a>
+                <span>🚚 Envíos a toda Colombia</span>
+                <span>💬 Atención por WhatsApp 24 horas: 313 423 7663</span>
+                <span>✨ <span class="cifra-productos-texto">Más de 1.100</span> productos en un solo lugar</span>
+                <a href="#sorteo" class="hover:text-[#D4AF37]" tabindex="-1">⏳ El sorteo cierra el <span class="sorteo-fin-texto">31 de diciembre</span></a>
+            </div>
+        </div>
+    </div>
 
     <!-- ========================================== -->
     <!-- 📌 ENCABEZADO Y HEADER RESPONSIVO -->
@@ -120,11 +171,151 @@
             <img src="vistazo_inicial_glow.jpeg"
                  alt="Glow & Go Banner"
                  class="w-full h-full object-cover object-center">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent flex items-end pb-6 sm:pb-8 px-4 sm:px-12">
-                <div class="max-w-7xl mx-auto w-full">
-                    <span class="bg-white/90 text-[#7A1C32] text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full shadow-sm">
-                        Tu mundo, en un solo lugar
+            <div class="absolute inset-0 bg-gradient-to-t sm:from-black/70 sm:via-black/20 from-transparent to-transparent flex items-end pb-5 sm:pb-10 px-4 sm:px-12">
+                <div class="max-w-7xl mx-auto w-full hidden sm:flex flex-row items-end justify-between gap-3">
+                    <div class="space-y-2 sm:space-y-3">
+                        <span class="inline-block bg-white/90 text-[#7A1C32] text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full shadow-sm">
+                            Tu mundo, en un solo lugar
+                        </span>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="catalogo.html" class="bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold text-xs sm:text-sm px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-lg transition-all hover:-translate-y-0.5">
+                                <i class="fa-solid fa-bag-shopping mr-1.5"></i> Ver catálogo
+                            </a>
+                            <a href="https://wa.me/573134237663?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="bg-green-500 hover:bg-green-600 text-white font-extrabold text-xs sm:text-sm px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-lg transition-all hover:-translate-y-0.5">
+                                <i class="fa-brands fa-whatsapp mr-1.5"></i> Pedir por WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                    <a href="#sorteo" class="badge-sorteo self-start sm:self-auto bg-[#D4AF37] text-[#521221] font-black text-[11px] sm:text-sm px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-transform">
+                        🎟️ Sorteo activo · <span class="sorteo-dias-cortos">—</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Botones del banner en celular (debajo de la imagen para no tapar el logo) -->
+    <div class="sm:hidden bg-white border-b border-gray-100 px-4 py-3 space-y-2">
+        <div class="grid grid-cols-2 gap-2">
+            <a href="catalogo.html" class="text-center bg-[#7A1C32] text-white font-extrabold text-xs py-2.5 rounded-xl shadow"><i class="fa-solid fa-bag-shopping mr-1"></i> Ver catálogo</a>
+            <a href="https://wa.me/573134237663?text=Hola,%20vengo%20de%20la%20tienda%20Glow%20%26%20Go" target="_blank" class="text-center bg-green-500 text-white font-extrabold text-xs py-2.5 rounded-xl shadow"><i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp</a>
+        </div>
+        <a href="#sorteo" class="badge-sorteo block text-center bg-[#D4AF37] text-[#521221] font-black text-xs py-2 rounded-xl">🎟️ Sorteo activo · <span class="sorteo-dias-cortos">—</span></a>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 🧭 ACCESOS RÁPIDOS A CATEGORÍAS -->
+    <!-- ========================================== -->
+    <section class="max-w-7xl mx-auto px-4 pt-8 lg:pt-10 revelar">
+        <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-2 sm:justify-center" style="scrollbar-width:none">
+            <a href="categorias.html?cat=TECNOLOGIA" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-xl sm:text-2xl text-[#7A1C32] group-hover:bg-[#7A1C32] group-hover:text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-headphones"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-gray-700">Tecnología</span>
+            </a>
+            <a href="categorias.html?cat=PERFUMERIA" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-xl sm:text-2xl text-[#7A1C32] group-hover:bg-[#7A1C32] group-hover:text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-spray-can-sparkles"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-gray-700">Perfumería</span>
+            </a>
+            <a href="categorias.html?cat=BELLEZA" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-xl sm:text-2xl text-[#7A1C32] group-hover:bg-[#7A1C32] group-hover:text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-gray-700">Belleza</span>
+            </a>
+            <a href="categorias.html?cat=HOGAR" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-xl sm:text-2xl text-[#7A1C32] group-hover:bg-[#7A1C32] group-hover:text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-house"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-gray-700">Hogar</span>
+            </a>
+            <a href="categorias.html?cat=NAVIDAD" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-xl sm:text-2xl text-[#7A1C32] group-hover:bg-[#7A1C32] group-hover:text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-gifts"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-gray-700">Navidad</span>
+            </a>
+            <a href="categorias.html?cat=FERRETERIA" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-xl sm:text-2xl text-[#7A1C32] group-hover:bg-[#7A1C32] group-hover:text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-gray-700">Ferretería</span>
+            </a>
+            <a href="categorias.html?cat=PROMOCIONES" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-xl sm:text-2xl text-[#7A1C32] group-hover:bg-[#7A1C32] group-hover:text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-tags"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-gray-700">Promociones</span>
+            </a>
+            <a href="categorias.html" class="group flex-shrink-0 flex flex-col items-center gap-1.5 w-20 sm:w-24">
+                <span class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#7A1C32] shadow-sm flex items-center justify-center text-xl sm:text-2xl text-white group-hover:-translate-y-1 transition-all"><i class="fa-solid fa-grip"></i></span>
+                <span class="text-[11px] sm:text-xs font-bold text-[#7A1C32]">Ver todas</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 🎟️ SORTEO TRIMESTRAL -->
+    <!-- ========================================== -->
+    <section id="sorteo" class="max-w-7xl mx-auto px-4 pt-8 lg:pt-12 scroll-mt-28 revelar">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#521221] via-[#7A1C32] to-[#9b2a45] text-white shadow-2xl p-6 sm:p-10">
+            <!-- Decoración -->
+            <div class="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#D4AF37]/20 blur-2xl"></div>
+            <div class="absolute -bottom-20 -left-10 w-64 h-64 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="ticket-flotante hidden md:flex absolute top-8 right-10 text-7xl lg:text-8xl drop-shadow-xl" aria-hidden="true">🎟️</div>
+
+            <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+                <!-- Columna izquierda: título, fechas y cuenta regresiva -->
+                <div class="space-y-4 text-center lg:text-left">
+                    <span class="inline-block bg-white/15 border border-white/20 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                        Sorteo trimestral · <span id="sorteo-nombre-trimestre">Oct – Dic</span>
                     </span>
+                    <h2 class="text-2xl sm:text-4xl font-black leading-tight">
+                        ¡Compra y <span class="texto-dorado">gana</span> con Glow & Go!
+                    </h2>
+                    <p class="text-sm sm:text-base text-white/90">
+                        Participan todas las compras del <strong id="sorteo-rango" class="text-[#D4AF37]">1 de octubre al 31 de diciembre</strong>.
+                        Cada pedido, sin importar su valor, te da <strong>1 ticket</strong> para el sorteo.
+                    </p>
+                    <p id="sorteo-premio" class="text-sm sm:text-base font-bold bg-white/10 border border-white/15 rounded-2xl px-4 py-3 inline-block">
+                        🎁 Premio sorpresa — lo revelamos muy pronto en nuestras redes
+                    </p>
+
+                    <!-- Cuenta regresiva -->
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-white/70 mb-2">El sorteo cierra en</p>
+                        <div class="flex justify-center lg:justify-start gap-2 sm:gap-3" role="timer" aria-live="off">
+                            <div class="cuenta-caja bg-white text-[#7A1C32] rounded-2xl py-2 sm:py-3 text-center shadow-lg"><span id="cd-dias" class="block text-2xl sm:text-4xl font-black">--</span><span class="text-[10px] sm:text-xs font-bold uppercase text-gray-500">Días</span></div>
+                            <div class="cuenta-caja bg-white text-[#7A1C32] rounded-2xl py-2 sm:py-3 text-center shadow-lg"><span id="cd-horas" class="block text-2xl sm:text-4xl font-black">--</span><span class="text-[10px] sm:text-xs font-bold uppercase text-gray-500">Horas</span></div>
+                            <div class="cuenta-caja bg-white text-[#7A1C32] rounded-2xl py-2 sm:py-3 text-center shadow-lg"><span id="cd-min" class="block text-2xl sm:text-4xl font-black">--</span><span class="text-[10px] sm:text-xs font-bold uppercase text-gray-500">Min</span></div>
+                            <div class="cuenta-caja bg-[#D4AF37] text-[#521221] rounded-2xl py-2 sm:py-3 text-center shadow-lg"><span id="cd-seg" class="block text-2xl sm:text-4xl font-black">--</span><span class="text-[10px] sm:text-xs font-bold uppercase">Seg</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de avance del trimestre -->
+                    <div>
+                        <div class="flex justify-between text-[10px] sm:text-xs font-bold text-white/70 mb-1">
+                            <span id="sorteo-inicio-corto">1 oct</span>
+                            <span id="sorteo-avance-texto">—</span>
+                            <span id="sorteo-fin-corto">31 dic</span>
+                        </div>
+                        <div class="w-full h-3 bg-white/15 rounded-full overflow-hidden">
+                            <div id="sorteo-barra" class="h-full bg-gradient-to-r from-[#D4AF37] to-[#fff3c4] rounded-full transition-all duration-1000" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna derecha: cómo funciona -->
+                <div class="bg-white text-gray-800 rounded-3xl p-5 sm:p-7 shadow-xl">
+                    <h3 class="text-lg sm:text-xl font-black text-[#7A1C32] mb-4 flex items-center"><i class="fa-solid fa-circle-question mr-2"></i> ¿Cómo funciona?</h3>
+                    <ol class="space-y-4">
+                        <li class="flex gap-3">
+                            <span class="flex-shrink-0 w-9 h-9 rounded-xl bg-[#7A1C32] text-white font-black flex items-center justify-center">1</span>
+                            <div><p class="font-extrabold text-sm sm:text-base">Haz tu pedido</p><p class="text-xs sm:text-sm text-gray-500">Por esta página o por WhatsApp. Cualquier producto, cualquier valor.</p></div>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="flex-shrink-0 w-9 h-9 rounded-xl bg-[#D4AF37] text-[#521221] font-black flex items-center justify-center">2</span>
+                            <div><p class="font-extrabold text-sm sm:text-base">Recibe tu ticket</p><p class="text-xs sm:text-sm text-gray-500">Cada pedido confirmado = 1 ticket a tu número de WhatsApp. ¡Más pedidos, más oportunidades!</p></div>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="flex-shrink-0 w-9 h-9 rounded-xl bg-[#7A1C32] text-white font-black flex items-center justify-center">3</span>
+                            <div><p class="font-extrabold text-sm sm:text-base">Espera el sorteo</p><p class="text-xs sm:text-sm text-gray-500">Al cerrar el trimestre sorteamos entre todos los tickets y le avisamos al ganador por WhatsApp.</p></div>
+                        </li>
+                    </ol>
+                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <a href="catalogo.html" class="text-center bg-[#7A1C32] hover:bg-[#621628] text-white font-extrabold text-sm py-3 rounded-xl transition-all shadow-md"><i class="fa-solid fa-ticket mr-1.5"></i> Quiero mi ticket</a>
+                        <a href="https://wa.me/573134237663?text=Hola,%20quiero%20participar%20en%20el%20sorteo%20trimestral%20de%20Glow%20%26%20Go" target="_blank" class="text-center bg-green-500 hover:bg-green-600 text-white font-extrabold text-sm py-3 rounded-xl transition-all shadow-md"><i class="fa-brands fa-whatsapp mr-1.5"></i> Preguntar</a>
+                    </div>
+                    <p class="text-[10px] sm:text-[11px] text-gray-400 mt-3 text-center">Los pedidos web cuentan cuando quedan confirmados. Un sorteo nuevo empieza cada trimestre.</p>
                 </div>
             </div>
         </div>
@@ -152,9 +343,37 @@
     </section>
 
     <!-- ========================================== -->
+    <!-- 📊 CIFRAS / POR QUÉ COMPRAR AQUÍ -->
+    <!-- ========================================== -->
+    <section class="max-w-7xl mx-auto px-4 revelar">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <i class="fa-solid fa-box-open text-2xl text-[#7A1C32]"></i>
+                <p class="text-2xl sm:text-4xl font-black text-gray-900 mt-2"><span id="cifra-productos" class="contador" data-meta="1100">0</span></p>
+                <p class="text-[11px] sm:text-sm font-bold text-gray-500">Productos</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <i class="fa-solid fa-layer-group text-2xl text-[#7A1C32]"></i>
+                <p class="text-2xl sm:text-4xl font-black text-gray-900 mt-2"><span id="cifra-categorias" class="contador" data-meta="25">0</span></p>
+                <p class="text-[11px] sm:text-sm font-bold text-gray-500">Categorías</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <i class="fa-solid fa-truck-fast text-2xl text-[#7A1C32]"></i>
+                <p class="text-2xl sm:text-4xl font-black text-gray-900 mt-2">🇨🇴</p>
+                <p class="text-[11px] sm:text-sm font-bold text-gray-500">Envíos a toda Colombia</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <i class="fa-brands fa-whatsapp text-2xl text-green-500"></i>
+                <p class="text-2xl sm:text-4xl font-black text-gray-900 mt-2"><span class="contador" data-meta="24">0</span>h</p>
+                <p class="text-[11px] sm:text-sm font-bold text-gray-500">Atención por WhatsApp</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
     <!-- ❤️ SECCIÓN: LA HISTORIA DETRÁS DE GLOW & GO -->
     <!-- ========================================== -->
-    <section class="w-full bg-[#7A1C32] text-white py-12 lg:py-16 px-4 lg:px-8 my-8 lg:my-12 shadow-inner">
+    <section class="w-full bg-[#7A1C32] text-white py-12 lg:py-16 px-4 lg:px-8 my-8 lg:my-12 shadow-inner revelar">
         <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div class="lg:col-span-4 flex justify-center">
                 <div class="w-56 h-56 lg:w-80 lg:h-80 rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl bg-white/10 flex items-center justify-center">
@@ -219,6 +438,117 @@
        class="fixed bottom-6 right-6 bg-green-500 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl shadow-lg hover:bg-green-600 transition-transform hover:scale-110 z-50">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
+
+    <!-- ========================================== -->
+    <!-- 🎟️ SORTEO: FECHAS, CUENTA REGRESIVA Y ANIMACIONES -->
+    <!-- ========================================== -->
+    <script>
+    (function () {
+        "use strict";
+
+        /* ✏️ Escribe aquí el premio del trimestre cuando lo tengas (déjalo vacío para "Premio sorpresa"). */
+        const PREMIO_SORTEO = "";
+
+        const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+        const MESES_CORTOS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
+        // Trimestre actual (igual que en el panel de administradora): T1 ene–mar, T2 abr–jun, T3 jul–sep, T4 oct–dic
+        const hoy = new Date();
+        const t = Math.floor(hoy.getMonth() / 3);
+        const inicio = new Date(hoy.getFullYear(), t * 3, 1);
+        const cierre = new Date(hoy.getFullYear(), t * 3 + 3, 1);          // medianoche del día siguiente al último día
+        const ultimoDia = new Date(cierre.getTime() - 1);
+
+        const $ = (id) => document.getElementById(id);
+        const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+        $("sorteo-nombre-trimestre").textContent =
+            cap(MESES_CORTOS[inicio.getMonth()]) + " – " + cap(MESES_CORTOS[ultimoDia.getMonth()]) + " " + ultimoDia.getFullYear();
+        $("sorteo-rango").textContent =
+            inicio.getDate() + " de " + MESES[inicio.getMonth()] + " al " + ultimoDia.getDate() + " de " + MESES[ultimoDia.getMonth()] + " de " + ultimoDia.getFullYear();
+        $("sorteo-inicio-corto").textContent = inicio.getDate() + " " + MESES_CORTOS[inicio.getMonth()];
+        $("sorteo-fin-corto").textContent = ultimoDia.getDate() + " " + MESES_CORTOS[ultimoDia.getMonth()];
+        document.querySelectorAll(".sorteo-fin-texto").forEach(el => {
+            el.textContent = ultimoDia.getDate() + " de " + MESES[ultimoDia.getMonth()];
+        });
+        if (PREMIO_SORTEO) $("sorteo-premio").textContent = "🎁 Premio: " + PREMIO_SORTEO;
+
+        const dos = (n) => String(n).padStart(2, "0");
+        function tic() {
+            const ahora = new Date();
+            const resta = Math.max(0, cierre - ahora);
+            const d = Math.floor(resta / 86400000);
+            const h = Math.floor(resta / 3600000) % 24;
+            const m = Math.floor(resta / 60000) % 60;
+            const s = Math.floor(resta / 1000) % 60;
+            $("cd-dias").textContent = d;
+            $("cd-horas").textContent = dos(h);
+            $("cd-min").textContent = dos(m);
+            $("cd-seg").textContent = dos(s);
+
+            const total = cierre - inicio;
+            const pct = Math.min(100, Math.max(0, ((ahora - inicio) / total) * 100));
+            $("sorteo-barra").style.width = pct.toFixed(1) + "%";
+            $("sorteo-avance-texto").textContent = d === 0 ? "¡Último día!" : (d === 1 ? "¡Falta 1 día!" : "Faltan " + d + " días");
+            document.querySelectorAll(".sorteo-dias-cortos").forEach(el => {
+                el.textContent = d === 0 ? "¡último día!" : (d === 1 ? "queda 1 día" : "quedan " + d + " días");
+            });
+        }
+        tic();
+        setInterval(tic, 1000);
+
+        // Contadores animados
+        function animarContador(el) {
+            el.dataset.animado = "1";
+            const meta = Number(el.dataset.meta) || 0;
+            const dur = 1400, t0 = performance.now();
+            function paso(t) {
+                const p = Math.min(1, (t - t0) / dur);
+                el.textContent = Math.round(meta * (1 - Math.pow(1 - p, 3))).toLocaleString("es-CO");
+                if (p < 1) requestAnimationFrame(paso);
+            }
+            requestAnimationFrame(paso);
+        }
+
+        // Cifras reales desde el catálogo (se llama cuando carga catalogo.csv)
+        window.glowActualizarCifras = function (productos) {
+            const lista = Array.isArray(productos) ? productos : [];
+            if (!lista.length) return;
+            const norm = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9]+/g, " ").trim().toUpperCase();
+            const enCatalogo = new Set(lista.map(p => norm(p.categoria)));
+            let nCat = 0;
+            if (typeof categoriasOficiales !== "undefined" && Array.isArray(categoriasOficiales)) {
+                nCat = new Set(categoriasOficiales.map(c => norm(c.nombre)).filter(k => enCatalogo.has(k))).size;
+            }
+            const cifras = [[$("cifra-productos"), lista.length], [$("cifra-categorias"), nCat]];
+            cifras.forEach(([el, valor]) => {
+                if (!el || !valor) return;
+                el.dataset.meta = valor;
+                if (el.dataset.animado) animarContador(el);
+            });
+            document.querySelectorAll(".cifra-productos-texto").forEach(el => {
+                el.textContent = lista.length.toLocaleString("es-CO");
+            });
+        };
+
+        // Aparición al hacer scroll
+        if ("IntersectionObserver" in window) {
+            const obs = new IntersectionObserver((entradas) => {
+                entradas.forEach(e => {
+                    if (!e.isIntersecting) return;
+                    e.target.classList.add("visible");
+                    e.target.querySelectorAll(".contador").forEach(animarContador);
+                    obs.unobserve(e.target);
+                });
+            }, { threshold: 0.15 });
+            document.querySelectorAll(".revelar").forEach(el => obs.observe(el));
+        } else {
+            document.querySelectorAll(".revelar").forEach(el => el.classList.add("visible"));
+            document.querySelectorAll(".contador").forEach(el => el.textContent = Number(el.dataset.meta).toLocaleString("es-CO"));
+        }
+    })();
+    </script>
 
     <!-- SCRIPT DE LÓGICA GENERAL Y USUARIO -->
 <script src="js/app.js"></script>
@@ -511,6 +841,7 @@
 
                 productosCargados = Array.from(mapaUnicos.values());
                 dibujarCinta(productosCargados);
+                if (typeof window.glowActualizarCifras === "function") window.glowActualizarCifras(productosCargados);
             } catch (error) {
                 console.error("Error al cargar la cinta CSV:", error);
             }
