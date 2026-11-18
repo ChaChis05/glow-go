@@ -37,6 +37,17 @@
             .revelar { opacity: 1; transform: none; }
         }
     </style>
+    <!-- Librería para el PDF de premios (solo administradora) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* El botón del PDF solo lo ve la administradora (sesión iniciada) */
+        #btn-pdf-premios { display: none !important; }
+        body.glow-admin #btn-pdf-premios { display: inline-flex !important; }
+        #estado-pdf-premios { display: none; position: fixed; inset: 0; z-index: 500000; background: rgba(0,0,0,.6); align-items: center; justify-content: center; padding: 1rem; }
+        #estado-pdf-premios.visible { display: flex; }
+        @keyframes girar-pdf { to { transform: rotate(360deg); } }
+        .pdf-spinner { width: 46px; height: 46px; border: 5px solid #f3e6e9; border-top-color: #7A1C32; border-radius: 50%; animation: girar-pdf .8s linear infinite; margin: 0 auto 1rem; }
+    </style>
     <script src="js/precios.js"></script>
 </head>
 
@@ -99,6 +110,9 @@
                     <span class="bg-white/10 border border-white/15 rounded-full px-3 py-1.5 text-xs font-bold"><i class="fa-solid fa-boxes-stacked mr-1 text-[#D4AF37]"></i> <span id="premios-productos">63</span> productos</span>
                     <span class="bg-white/10 border border-white/15 rounded-full px-3 py-1.5 text-xs font-bold">⏳ <span id="premios-dias">—</span></span>
                 </div>
+                <button id="btn-pdf-premios" type="button" onclick="generarPdfPremios()" class="items-center gap-2 bg-white text-[#7A1C32] hover:bg-amber-50 font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-lg disabled:opacity-60 disabled:cursor-wait">
+                    <i class="fa-solid fa-file-pdf"></i> Descargar PDF de premios
+                </button>
                 <p class="text-[11px] sm:text-xs text-white/70 pt-1">
                     <i class="fa-solid fa-circle-info mr-1"></i> Estos productos son solo para el ganador del sorteo. Si quieres comprar alguno, búscalo en el
                     <a href="catalogo.html" class="underline font-bold text-white">catálogo</a>.
@@ -144,6 +158,15 @@
                 <i class="fa-solid fa-xmark"></i>
             </button>
             <div id="modal-premio-contenido" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- VENTANA DE ESPERA DEL PDF -->
+    <div id="estado-pdf-premios" role="status" aria-live="polite">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <div class="pdf-spinner"></div>
+            <h2 id="texto-pdf-premios" class="text-xl font-black text-[#7A1C32] mb-2">Creando PDF de premios</h2>
+            <p class="text-sm text-gray-600">Por favor espera mientras organizamos los premios, las imágenes y los precios.</p>
         </div>
     </div>
 
@@ -415,6 +438,216 @@
             els.forEach(e => obs.observe(e));
         }
 
+        /* ==========================================================
+           📄 PDF DE PREMIOS (solo administradora)
+           ========================================================== */
+        const CEREZA = [122, 28, 50], DORADO = [212, 175, 55], OSCURO = [82, 18, 33];
+        const CARPETAS = ["IMAGENES PRODUCTOS", "IMAGENES PRODUCTOS 2"];
+
+        function imagenComoDatos(ruta) {
+            return new Promise(resolve => {
+                const im = new Image();
+                im.onload = () => {
+                    try {
+                        const c = document.createElement("canvas");
+                        c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height;
+                        const x = c.getContext("2d");
+                        x.fillStyle = "#ffffff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0);
+                        resolve({ datos: c.toDataURL("image/jpeg", 0.85), ancho: c.width, alto: c.height });
+                    } catch (e) { resolve(null); }
+                };
+                im.onerror = () => resolve(null);
+                im.src = ruta;
+            });
+        }
+        async function imagenProducto(prod) {
+            for (const ruta of (prod.imagenes || [])) {
+                const base = String(ruta).replace(/^.*\//, "").replace(/\.[^.]+$/, "");
+                const rutas = [ruta];
+                CARPETAS.forEach(cp => ["webp", "jpg", "png"].forEach(ext => rutas.push(cp + "/" + base + "." + ext)));
+                for (const r of [...new Set(rutas)]) {
+                    const d = await imagenComoDatos(r);
+                    if (d) return d;
+                }
+            }
+            return null;
+        }
+        function ajustar(doc, img, x, y, w, h) {
+            if (!img) return;
+            const k = Math.min(w / img.ancho, h / img.alto);
+            doc.addImage(img.datos, "JPEG", x + (w - img.ancho * k) / 2, y + (h - img.alto * k) / 2, img.ancho * k, img.alto * k, undefined, "FAST");
+        }
+        function pildora(doc, texto, x, y, fondo, color, tam) {
+            doc.setFont("helvetica", "bold"); doc.setFontSize(tam || 6.5);
+            const w = doc.getTextWidth(texto) + 5, h = (tam || 6.5) * 0.55 + 1.6;
+            doc.setFillColor(...fondo); doc.roundedRect(x, y, w, h, h / 2, h / 2, "F");
+            doc.setTextColor(...color); doc.text(texto, x + 2.5, y + h - 1.35);
+            return w;
+        }
+        const pesosPDF = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
+        function estadoPdf(m) { const t = $("texto-pdf-premios"); if (t) t.textContent = m; }
+
+        window.generarPdfPremios = async function () {
+            const boton = $("btn-pdf-premios"), pantalla = $("estado-pdf-premios");
+            if (boton && boton.disabled) return;
+            if (typeof window.jspdf === "undefined") { alert("No se pudo cargar la librería PDF."); return; }
+            if (boton) boton.disabled = true;
+            pantalla.classList.add("visible");
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+                const W = 210, H = 297, M = 12, U = W - M * 2;
+                const periodo = $("premios-rango").textContent + " de " + ultimo.getFullYear();
+                const premios = window.GLOW_PREMIOS || [], secciones = window.GLOW_PREMIOS_SECCIONES || [];
+
+                // ---------- Portada ----------
+                estadoPdf("Diseñando la portada...");
+                doc.setFillColor(...CEREZA); doc.rect(0, 0, W, H, "F");
+                doc.setDrawColor(...DORADO); doc.setLineWidth(1.2); doc.rect(7, 7, W - 14, H - 14);
+                const portada = await imagenComoDatos("vistazo_inicial_glow.jpeg");
+                if (portada) ajustar(doc, portada, 22, 22, W - 44, 140);
+                doc.setTextColor(...DORADO); doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+                doc.text("SORTEO TRIMESTRAL", W / 2, 180, { align: "center" });
+                doc.setTextColor(255, 255, 255); doc.setFontSize(32);
+                doc.text("PREMIOS DEL SORTEO", W / 2, 195, { align: "center" });
+                doc.setDrawColor(...DORADO); doc.setLineWidth(0.8); doc.line(40, 203, 170, 203);
+                doc.setFont("helvetica", "normal"); doc.setFontSize(12);
+                doc.text("Si ganas, tú escoges tu premio.", W / 2, 214, { align: "center" });
+                doc.setFontSize(10);
+                doc.text("Participan los pedidos del " + periodo + ".", W / 2, 222, { align: "center" });
+                doc.text("Cada pedido, sin importar su valor, es 1 ticket.", W / 2, 229, { align: "center" });
+                const nProd = premios.reduce((s, p) => s + p.productos.filter(buscarProducto).length, 0);
+                doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...DORADO);
+                doc.text(premios.length + " PREMIOS  ·  " + nProd + " PRODUCTOS", W / 2, 243, { align: "center" });
+                doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+                doc.text("glowgo.site  ·  WhatsApp 24 horas: 313 423 7663", W / 2, 272, { align: "center" });
+                doc.text("Glow & Go · Tu mundo, en un solo lugar.", W / 2, 279, { align: "center" });
+
+                // ---------- Páginas de premios ----------
+                let y = 0;
+                const INI = 32, LIM = 280;
+                function nuevaPagina() {
+                    doc.addPage();
+                    doc.setTextColor(...CEREZA); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+                    doc.text("GLOW & GO", M, 14);
+                    doc.setTextColor(100, 90, 92); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+                    doc.text("PREMIOS DEL SORTEO · " + $("premios-trimestre").textContent.toUpperCase(), W - M, 14, { align: "right" });
+                    doc.setDrawColor(...DORADO); doc.setLineWidth(0.7); doc.line(M, 20, W - M, 20);
+                    y = INI;
+                }
+                function tituloSeccion(nombre) {
+                    if (y + 14 > LIM) nuevaPagina();
+                    doc.setFillColor(...CEREZA); doc.roundedRect(M, y, U, 10, 2, 2, "F");
+                    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+                    doc.text(nombre.toUpperCase(), M + 4, y + 6.8);
+                    y += 14;
+                }
+
+                const COLS = 4, SEP = 3.5;
+                const anchoT = (U - SEP * (COLS - 1)) / COLS, altoImg = 30, altoT = 52;
+
+                nuevaPagina();
+                for (const sec of secciones) {
+                    const lista = premios.filter(p => p.seccion === sec.id);
+                    if (!lista.length) continue;
+                    estadoPdf("Organizando " + sec.nombre + "...");
+                    if (y + 14 + 18 + altoT > LIM) nuevaPagina();   // el título nunca queda solo al final
+                    tituloSeccion(sec.nombre);
+
+                    for (const premio of lista) {
+                        const prods = premio.productos.map(it => ({ it, p: buscarProducto(it) })).filter(x => x.p);
+                        if (!prods.length) continue;
+                        const esCombo = premio.tipo === "combo", n = prods.length;
+                        const precios = prods.map(x => Number(x.p.precioNum) || 0);
+                        const total = precios.reduce((a, b) => a + b, 0), max = Math.max(...precios), min = Math.min(...precios);
+
+                        // Encabezado del premio (no se separa de su primera fila)
+                        if (y + 18 + altoT > LIM) { nuevaPagina(); tituloSeccion(sec.nombre); }
+                        doc.setFillColor(250, 245, 246);
+                        doc.setDrawColor(...(premio.sorpresa ? DORADO : [232, 224, 226]));
+                        doc.setLineWidth(premio.sorpresa ? 0.6 : 0.3);
+                        doc.roundedRect(M, y, U, 15, 2, 2, "FD");
+                        let px = M + 3;
+                        const tipoTxt = esCombo ? (n === 1 ? "PREMIO INDIVIDUAL" : "COMBO · TE LLEVAS " + (n === 2 ? "LOS DOS" : n === 3 ? "LOS TRES" : "TODO")) : "ESCOGE 1 DE " + n;
+                        px += pildora(doc, tipoTxt, px, y + 2.2, esCombo ? [243, 228, 232] : [229, 238, 255], esCombo ? CEREZA : [29, 78, 216]) + 2;
+                        if (premio.sorpresa) pildora(doc, "+ REGALO SORPRESA", px, y + 2.2, DORADO, OSCURO);
+                        doc.setTextColor(30, 25, 27); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+                        doc.text(premio.titulo, M + 3, y + 12);
+                        doc.setFont("helvetica", "bold"); doc.setFontSize(6.5); doc.setTextColor(120, 110, 112);
+                        doc.text(esCombo ? (n === 1 ? "VALOR DEL PREMIO" : "VALOR TOTAL DEL COMBO") : (min !== max ? "PREMIOS DE " + pesosPDF(min) + " A" : "VALOR"), W - M - 3, y + 5, { align: "right" });
+                        doc.setFontSize(13); doc.setTextColor(...CEREZA);
+                        doc.text(pesosPDF(esCombo ? total : max), W - M - 3, y + 12, { align: "right" });
+                        y += 18;
+
+                        let col = 0;
+                        for (const { it, p } of prods) {
+                            if (y + altoT > LIM) { nuevaPagina(); tituloSeccion(sec.nombre + " (continuación)"); col = 0; }
+                            const x = M + col * (anchoT + SEP);
+                            const sorpresa = !esCombo && it.sorpresa;
+                            doc.setDrawColor(...(sorpresa ? DORADO : [232, 224, 226])); doc.setLineWidth(sorpresa ? 0.6 : 0.3);
+                            doc.roundedRect(x, y, anchoT, altoT, 2, 2, "S");
+                            estadoPdf("Cargando " + p.nombre.slice(0, 28) + "...");
+                            const img = await imagenProducto(p);
+                            if (img) ajustar(doc, img, x + 2.5, y + 2.5, anchoT - 5, altoImg);
+                            if (sorpresa) pildora(doc, "+ REGALO SORPRESA", x + 2, y + 2, DORADO, OSCURO, 5.5);
+                            doc.setTextColor(45, 35, 38); doc.setFont("helvetica", "bold"); doc.setFontSize(6.6);
+                            const lineas = doc.splitTextToSize(p.nombre, anchoT - 5).slice(0, 2);
+                            doc.text(lineas, x + 2.5, y + altoImg + 7);
+                            doc.setTextColor(...CEREZA); doc.setFontSize(8.5);
+                            doc.text(pesosPDF(p.precioNum), x + 2.5, y + altoT - 3);
+                            col++;
+                            if (col >= COLS) { col = 0; y += altoT + 3.5; }
+                        }
+                        if (col !== 0) y += altoT + 3.5;
+                        y += 4;
+                    }
+                    y += 2;
+                }
+
+                // ---------- Cómo funciona ----------
+                if (y + 62 > LIM) nuevaPagina();
+                doc.setFillColor(...CEREZA); doc.roundedRect(M, y, U, 58, 3, 3, "F");
+                doc.setTextColor(...DORADO); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+                doc.text("¿CÓMO FUNCIONA?", M + 6, y + 10);
+                const pasos = [
+                    ["1", "Haz tu pedido por glowgo.site o por WhatsApp. Cualquier producto, cualquier valor."],
+                    ["2", "Cada pedido confirmado es 1 ticket a tu número de WhatsApp. Más pedidos, más oportunidades."],
+                    ["3", "Al cerrar el trimestre sorteamos entre todos los tickets y le avisamos al ganador por WhatsApp."],
+                    ["4", "El ganador escoge su premio entre todas las opciones de este catálogo."]
+                ];
+                pasos.forEach((ps, i) => {
+                    const yy = y + 19 + i * 9.5;
+                    doc.setFillColor(...DORADO); doc.circle(M + 9, yy - 1.3, 3, "F");
+                    doc.setTextColor(...OSCURO); doc.setFontSize(9); doc.text(ps[0], M + 9, yy, { align: "center" });
+                    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+                    doc.text(ps[1], M + 15, yy);
+                    doc.setFont("helvetica", "bold");
+                });
+                y += 62;
+
+                // ---------- Pie de página ----------
+                estadoPdf("Finalizando y descargando PDF...");
+                const total = doc.internal.getNumberOfPages();
+                for (let pg = 2; pg <= total; pg++) {
+                    doc.setPage(pg);
+                    doc.setDrawColor(...DORADO); doc.setLineWidth(0.4); doc.line(M, 285, W - M, 285);
+                    doc.setTextColor(110, 110, 110); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+                    doc.text("glowgo.site  ·  WhatsApp 313 423 7663", M, 290);
+                    doc.text("Página " + (pg - 1) + " de " + (total - 1), W - M, 290, { align: "right" });
+                }
+                const nombre = "Premios_Sorteo_Glow_and_Go_" + $("premios-trimestre").textContent.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_") + ".pdf";
+                doc.save(nombre);
+                estadoPdf("¡PDF de premios generado!");
+                await new Promise(r => setTimeout(r, 900));
+            } catch (e) {
+                console.error(e);
+                alert("No se pudo generar el PDF de premios.");
+            } finally {
+                pantalla.classList.remove("visible");
+                if (boton) boton.disabled = false;
+            }
+        };
+
         /* ---------- Inicio ---------- */
         function ajustarBarra() {
             const h = document.querySelector("header");
@@ -430,7 +663,19 @@
             const espera = setInterval(() => {
                 intentos++;
                 const listo = typeof productosInventario !== "undefined" && Array.isArray(productosInventario) && productosInventario.length > 0;
-                if (listo) { clearInterval(espera); pintarPremios(); }
+                if (listo) {
+                    clearInterval(espera);
+                    pintarPremios();
+                    if (new URLSearchParams(location.search).get("pdf") === "1") {
+                        // Espera a que se confirme la sesión de administradora (máx. ~12 s)
+                        let n = 0;
+                        const esperaAdmin = setInterval(() => {
+                            n++;
+                            if (document.body.classList.contains("glow-admin")) { clearInterval(esperaAdmin); generarPdfPremios(); }
+                            else if (n > 60) clearInterval(esperaAdmin);
+                        }, 200);
+                    }
+                }
                 else if (intentos > 300) {
                     clearInterval(espera);
                     $("premios-contenedor").innerHTML = `<div class="text-center text-gray-400 py-16 text-sm font-semibold">No se pudieron cargar los premios. Recarga la página.</div>`;
